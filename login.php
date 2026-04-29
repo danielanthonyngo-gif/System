@@ -45,8 +45,8 @@ if (isset($_POST['login'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
-            --brand-purple: #6f42c1;
-            --dark-purple: #321b5c;
+            --brand-purple: #2E073F;
+            --dark-purple: #2E073F;
             --hover-purple: #59359a;
         }
         body {

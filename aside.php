@@ -3,16 +3,21 @@
 // Aside.php - Sidebar Component
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
-123
+
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&display=swap" rel="stylesheet">
+
 <style>
     :root {
-        /* Gradient Background: Purple to Pink */
-        --sidebar-gradient: linear-gradient(180deg, #692a7a 0%, #a24bcf 50%, #d83a8a 100%);
+        /* Sidebar Gradient Background */
+        --sidebar-gradient: linear-gradient(180deg, #2E073F 0%, #2E073F 100%);
         --sidebar-hover: rgba(255, 255, 255, 0.15);
-        --accent-color: #ff9ff3; /* Mas light na pink/purple para sa active indicator */
+        --accent-color: #ff9ff3; 
         --sidebar-width: 260px;
-        --logo-dark: #2d2d2d; 
-        --logo-purple: #9b59b6;
+        
+        /* Logo Colors from Image */
+        --logo-black: #F3F4F4;
+        --logo-purple: #AD49E1; 
+        --brand-bg: #2E073F; 
     }
 
     /* Sidebar Main Style */
@@ -22,34 +27,39 @@ $current_page = basename($_SERVER['PHP_SELF']);
         position: fixed;
         top: 0;
         left: 0;
-        background: var(--sidebar-gradient); /* In-apply ang gradient dito */
+        background: var(--sidebar-gradient);
         color: white;
         z-index: 1000;
         box-shadow: 4px 0 15px rgba(0,0,0,0.3);
         transition: all 0.3s ease;
     }
 
-    /* Brand Section - Styled like the logo image */
+    /* Brand Section - Ginayang white background gaya ng image */
     .brand-section {
         padding: 30px 20px;
-        background: #fffeff; /* Light beige contrast para lumitaw ang logo */
+        background: var(--brand-bg); 
         display: flex;
         align-items: center;
         justify-content: center;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        border-bottom: 1px solid rgba(0,0,0,0.1);
     }
 
-    .logo-text {
-        font-family: 'Arial Black', sans-serif;
-        font-size: 2.2rem;
-        font-weight: 900;
-        letter-spacing: -2px;
-        color: var(--logo-dark);
+    /* Logo Styling */
+    .logo-container {
+        display: flex;
+        align-items: baseline;
+        font-family: 'Ubuntu', sans-serif; /* Rounded font style */
+        font-size: 2.7rem;
+        font-weight: 700;
+        letter-spacing: -2.5px; /* Siksik na mga letra gaya ng sa image */
+        color: var(--logo-black);
         text-transform: lowercase;
         line-height: 1;
+        user-select: none;
     }
 
-    .logo-text span.accent {
+    /* Purple color for the 'r' */
+    .logo-r {
         color: var(--logo-purple);
     }
 
@@ -62,7 +72,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         padding: 15px 25px;
         display: flex;
         align-items: center;
-        color: rgba(245, 204, 241, 0.9) !important;
+        color: rgba(241, 234, 241, 0.9) !important;
         text-decoration: none !important;
         transition: all 0.3s ease;
         border-left: 5px solid transparent;
@@ -77,7 +87,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         font-size: 1.1rem;
     }
 
-    /* Hover and Active State */
+    /* Hover and Active States */
     .nav-item:hover {
         background: var(--sidebar-hover);
         color: white !important;
@@ -90,12 +100,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
         font-weight: 600;
     }
 
-    /* Content Adjustment */
+    /* Content Adjustment for pages using this sidebar */
     .content-wrapper, .content {
         margin-left: var(--sidebar-width);
         transition: all 0.3s ease;
     }
 
+    /* Responsive adjustments */
     @media (max-width: 992px) {
         .sidebar { left: -260px; }
         .content-wrapper, .content { margin-left: 0; }
@@ -104,8 +115,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 <div class="sidebar">
     <div class="brand-section">
-        <div class="logo-text">
-            inspi<span class="accent">r</span>o
+        <div class="logo-container">
+            inspi<span class="logo-r">r</span>o
         </div>
     </div>
 
@@ -126,7 +137,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </a>
 
         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
-            <a class='d-none'href="create_item.php" class="nav-item <?php echo ($current_page == 'create_item.php') ? 'active' : ''; ?>">
+            <a class='d-none' href="create_item.php" class="nav-item <?php echo ($current_page == 'create_item.php') ? 'active' : ''; ?>">
                 <i class="fas fa-plus-circle"></i> 
                 <span>Create Item</span>
             </a>
@@ -139,5 +150,3 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </nav>
 </div>
 </aside>
-
-aaaaaaaarrr

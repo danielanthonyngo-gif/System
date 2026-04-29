@@ -40,7 +40,7 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
     
     <style>
         :root { 
-            --main-gradient: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --accent-purple: #8e44ad;
             --bg-light: #f4f7fe; /* Patterned after image_d10958.png */
             --sidebar-width: 260px;
@@ -49,7 +49,7 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
         body { 
             background-color: var(--bg-light); 
             font-family: 'Plus Jakarta Sans', sans-serif;
-            color: #2d3436;
+            color: #362d36;
             margin: 0;
         }
 
@@ -99,14 +99,14 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
         }
 
         .user-name-top {
-            color: #8e44ad;
+            color: #2E073F;
             font-weight: 600;
             font-size: 1rem;
             margin-bottom: 0;
         }
 
         .sign-out-link {
-            color: #ff5e91; /* Pinkish color for Sign Out */
+            color: #AD49E1; /* Pinkish color for Sign Out */
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 600;
@@ -144,9 +144,9 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
         .status-card:hover { transform: translateY(-5px); }
         .card-icon { font-size: 3.5rem; opacity: 0.2; position: absolute; right: -10px; bottom: -10px; }
         
-        .bg-inuse { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .bg-disposal { background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%); }
-        .bg-replacement { background: linear-gradient(135deg, #4834d4 0%, #686de0 100%); }
+        .bg-inuse { background: linear-gradient(135deg, #AD49E1 0%, #AD49E1 100%); }
+        .bg-disposal { background: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%); }
+        .bg-replacement { background: linear-gradient(135deg, #2E073F 0%, #2E073F 100%); }
 
         .calendar-card {
             background: white;
@@ -223,11 +223,11 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
         <div class="row">
             <div class="col-12">
                 <div class="calendar-card">
-                    <h5 class="fw-800 mb-4" style="color: #2b3674;">Inventory Calendar</h5>
+                    <h5 class="fw-800 mb-4" style="color: #2E073F;">Inventory Calendar</h5>
                     <div class="table-responsive">
                         <table class="table table-borderless text-center align-middle">
                             <thead>
-                                <tr style="color: #a3aed0; font-weight: 700; font-size: 0.85rem;">
+                                <tr style="color: #2E073F; font-weight: 700; font-size: 0.85rem;">
                                     <th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th><th>SAT</th><th>SUN</th>
                                 </tr>
                             </thead>

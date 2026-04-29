@@ -78,7 +78,7 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
     <style>
         :root { 
             --app-bg: #f4f7fe; 
-            --main-gradient: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --accent-purple: #8e44ad; 
             --sidebar-width: 260px;
         }
@@ -108,8 +108,8 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
         
         .user-nav-section { display: flex; align-items: center; gap: 15px; }
         .user-info-text { line-height: 1.2; }
-        .user-name-top { color: var(--accent-purple); font-weight: 700; font-size: 0.95rem; }
-        .sign-out-link { color: #ff5e91; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+        .user-name-top { color: var(--dark-purple); font-weight: 700; font-size: 0.95rem; }
+        .sign-out-link { color: #AD49E1; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
 
         .profile-avatar-pill {
             width: 50px; height: 50px; 
@@ -129,8 +129,8 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
         .btn-create-item { background: var(--main-gradient); color: white; border: none; padding: 15px 30px; border-radius: 18px; font-weight: 800; text-transform: uppercase; }
 
         .status-badge { padding: 6px 12px; border-radius: 10px; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; }
-        .st-active { background: #e3fcef; color: #00b894; }
-        .st-disposal { background: #fff0f0; color: #d63031; }
+        .st-active { background: #b198be; color: #2E073F; }
+        .st-disposal { background: #cfb6b6; color: #2E073F; }
         .st-replacement { background: #fff9e6; color: #f39c12; }
 
         @media (max-width: 992px) { .content-wrapper { margin-left: 0; padding: 20px; } }

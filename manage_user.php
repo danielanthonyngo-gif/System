@@ -73,7 +73,7 @@ $result = mysqli_query($conn, $query);
     <style>
         :root { 
             --app-bg: #f4f7fe;
-            --main-gradient: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --accent-purple: #8e44ad;
             --sidebar-width: 260px;
         }
@@ -123,14 +123,14 @@ $result = mysqli_query($conn, $query);
         .user-info-text { text-align: right; }
 
         .user-name-top {
-            color: #8e44ad;
+            color: #2E073F;
             font-weight: 600;
             font-size: 1rem;
             margin-bottom: 0;
         }
 
         .sign-out-link {
-            color: #ff5e91;
+            color: #AD49E1;
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 600;
@@ -171,8 +171,8 @@ $result = mysqli_query($conn, $query);
         }
         .table tbody td { padding: 18px 20px; color: #2b3674; font-weight: 700; font-size: 0.95rem; }
 
-        .badge-active { background: #e6fffa; color: #059669; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.7rem; }
-        .badge-inactive { background: #fff5f5; color: #e53e3e; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.7rem; }
+        .badge-active { background: #b198be; color: #2E073F; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.7rem; }
+        .badge-inactive { background: #cfb6b6; color: #2E073F; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.7rem; }
         
         .btn-add { 
             background: var(--main-gradient); 
@@ -185,7 +185,7 @@ $result = mysqli_query($conn, $query);
             transition: 0.3s; 
         }
 
-        .btn-action-edit { background: #f4f7fe; color: #4318ff; border: none; padding: 10px; border-radius: 12px; transition: 0.3s; }
+        .btn-action-edit { background: #efebf1; color: #7A1CAC; border: none; padding: 10px; border-radius: 12px; transition: 0.3s; }
         .btn-action-delete { background: #fff5f5; color: #e53e3e; border: none; padding: 10px; border-radius: 12px; transition: 0.3s; }
 
         /* Modal Styling */
@@ -220,7 +220,7 @@ $result = mysqli_query($conn, $query);
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-4 px-2">
-            <h5 class="fw-800 m-0" style="color: #2b3674;">User Directory</h5>
+            <h5 class="fw-800 m-0" style="color: #2E073F;">User Directory</h5>
             <button class="btn btn-add" data-bs-toggle="modal" data-bs-target="#addUserModal">
                 <i class="fas fa-plus me-2"></i> Add New User
             </button>

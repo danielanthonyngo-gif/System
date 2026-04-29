@@ -36,10 +36,10 @@ $current_page = 'view_area.php';
     <style>
         :root { 
             --app-bg: #f8f7ff;
-            --main-gradient: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --sidebar-width: 260px;
-            --accent-purple: #6f42c1;
-            --accent-pink: #d63384;
+            --accent-purple: #2E073F;
+            --accent-pink: #7A1CAC;
         }
 
         body { 

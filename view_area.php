@@ -38,7 +38,7 @@ $other_areas = [
     <style>
         :root {
             --app-bg: #f4f7fe; /* Patterned after image_d10958.png */
-            --main-gradient: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --accent-purple: #8e44ad;
             --text-main: #2d3436;
             --sidebar-width: 260px;
@@ -96,14 +96,14 @@ $other_areas = [
         }
 
         .user-name-top {
-            color: #8e44ad;
+            color: #2E073F;
             font-weight: 600;
             font-size: 1rem;
             margin-bottom: 0;
         }
 
         .sign-out-link {
-            color: #ff5e91;
+            color: #AD49E1;
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 600;
