@@ -10,10 +10,12 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $current_uid = $_SESSION['user_id'];
-$user_res = mysqli_query($conn, "SELECT fullname FROM users WHERE id = '$current_uid'");
+// Updated to include 'role' from database
+$user_res = mysqli_query($conn, "SELECT fullname, role FROM users WHERE id = '$current_uid'");
 $user_data = mysqli_fetch_assoc($user_res);
 
 $display_name = $user_data['fullname'] ?? "Unknown User"; 
+$user_role = $user_data['role'] ?? "User"; // Captured user role
 $search = $_GET['search'] ?? '';
 
 // --- 2. UPDATE LOGIC ---
@@ -40,21 +42,25 @@ if (isset($_POST['update_asset'])) {
     }
 }
 
-// --- NEW ASSET LOGIC ---
+// --- NEW ASSET LOGIC (Restricted to Administrator) ---
 if (isset($_POST['save_asset'])) {
-    $serial = mysqli_real_escape_string($conn, $_POST['serial_number']);
-    $model = mysqli_real_escape_string($conn, $_POST['brand_model']);
-    $type = mysqli_real_escape_string($conn, $_POST['type']);
-    $loc = mysqli_real_escape_string($conn, $_POST['location']);
-    $date = mysqli_real_escape_string($conn, $_POST['date']);
-    $status = mysqli_real_escape_string($conn, $_POST['status']);
+    if ($user_role === 'Administrator') {
+        $serial = mysqli_real_escape_string($conn, $_POST['serial_number']);
+        $model = mysqli_real_escape_string($conn, $_POST['brand_model']);
+        $type = mysqli_real_escape_string($conn, $_POST['type']);
+        $loc = mysqli_real_escape_string($conn, $_POST['location']);
+        $date = mysqli_real_escape_string($conn, $_POST['date']);
+        $status = mysqli_real_escape_string($conn, $_POST['status']);
 
-    $insert = "INSERT INTO assets (serial_number, brand_model, equipment_type, location, inventory_date, status, updated_by) 
-               VALUES ('$serial', '$model', '$type', '$loc', '$date', '$status', '$display_name')";
-    
-    if (mysqli_query($conn, $insert)) {
-        header("Location: view_inventory.php?msg=New Asset Registered");
-        exit();
+        $insert = "INSERT INTO assets (serial_number, brand_model, equipment_type, location, inventory_date, status, updated_by) 
+                   VALUES ('$serial', '$model', '$type', '$loc', '$date', '$status', '$display_name')";
+        
+        if (mysqli_query($conn, $insert)) {
+            header("Location: view_inventory.php?msg=New Asset Registered");
+            exit();
+        }
+    } else {
+        die("Unauthorized access.");
     }
 }
 
@@ -90,10 +96,9 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
             min-height: 100vh; 
         }
         
-        /* UPDATED TOP NAV BAR (Katulad sa Screenshot) */
         .glass-header-container {
             background: white; 
-            border-radius: 50px; /* Mas bilugan katulad sa photo */
+            border-radius: 50px;
             padding: 15px 45px; 
             display: flex;
             justify-content: space-between; 
@@ -121,7 +126,6 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
             box-shadow: 0 5px 15px rgba(111, 66, 193, 0.3);
         }
 
-        /* Forms & Tables */
         .metric-card { background: white; border-radius: 20px; padding: 1.5rem; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
         .data-panel { background: white; border-radius: 25px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
         .form-label-custom { font-weight: 700; color: var(--accent-purple); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 8px; display: block; }
@@ -142,7 +146,6 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
 
 <div class="content-wrapper" id="pdfContent">
     
-    <!-- TOP NAV BAR (Patterned to Screenshot) -->
     <div class="glass-header-container no-export">
         <div class="header-title-section">
             <h2>VIEW INVENTORY</h2>
@@ -160,7 +163,6 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
         </div>
     </div>
 
-    <!-- Rest of your code remains the same master -->
     <div class="row g-3 mb-4 no-export">
         <div class="col-md-4"><div class="metric-card p-3 d-flex justify-content-between"><span>Replacement</span><h4 class="m-0 fw-800"><?php echo $count_replacement; ?></h4></div></div>
         <div class="col-md-4"><div class="metric-card p-3 d-flex justify-content-between"><span>For Disposal</span><h4 class="m-0 fw-800 text-danger"><?php echo $count_disposal; ?></h4></div></div>
@@ -175,9 +177,11 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
                 </form>
             </div>
             <div class="col-md-6 text-end d-flex gap-2 justify-content-end">
-                <button class="btn btn-primary p-3 fw-bold rounded-3 border-0" style="background: var(--main-gradient);" data-bs-toggle="modal" data-bs-target="#createItemModal">
-                    <i class="fas fa-plus-circle me-2"></i>Create Item
-                </button>
+                <?php if ($user_role === 'Administrator'): ?>
+                    <button class="btn btn-primary p-3 fw-bold rounded-3 border-0" style="background: var(--main-gradient);" data-bs-toggle="modal" data-bs-target="#createItemModal">
+                        <i class="fas fa-plus-circle me-2"></i>Create Item
+                    </button>
+                <?php endif; ?>
                 <button onclick="exportToPDF()" class="btn btn-dark p-3 fw-bold rounded-3">
                     <i class="fas fa-file-pdf me-2"></i>Export PDF
                 </button>
@@ -229,7 +233,6 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
     </div>
 </div>
 
-<!-- CREATE ITEM MODAL -->
 <div class="modal fade" id="createItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 35px; background: #fcfaff;">
