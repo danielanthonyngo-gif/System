@@ -3,7 +3,7 @@
 // Aside.php - Sidebar Component
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
-
+123
 <style>
     :root {
         /* Gradient Background: Purple to Pink */
