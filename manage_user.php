@@ -115,7 +115,7 @@ $result = mysqli_query($conn, $query);
         /* Custom SweetAlert Styles to match image_2b4b44.png */
         .swal2-popup { border-radius: 20px !important; padding: 2rem !important; }
         .swal2-title { font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 700 !important; color: #444 !important; font-size: 1.8rem !important; }
-        .swal2-html-container { font-family: 'Plus Jakarta Sans', sans-serif !important; color: #666 !important; font-weight: 400 !important; }
+        .swal2-html-container { font-family: 'Plus Jakarta Sans', sans-serif !important; color: #2c2a2a !important; font-weight: 400 !important; }
         .swal2-confirm { background-color: #7A1CAC !important; border-radius: 10px !important; padding: 12px 30px !important; font-weight: 600 !important; }
         .swal2-cancel { background-color: #ef4444 !important; border-radius: 10px !important; padding: 12px 30px !important; font-weight: 600 !important; }
 
@@ -295,7 +295,7 @@ function confirmDelete(id) {
         width: '380px', // Landscape width but compact
         padding: '0.5rem', // Sobrang nipis para mababa ang height
         showCancelButton: true,
-        confirmButtonColor: '#9256b3', 
+        confirmButtonColor: '#7A1CAC', 
         cancelButtonColor: '#ef4444',
         confirmButtonText: 'YES, DELETE',
         cancelButtonText: 'CANCEL',
@@ -310,7 +310,7 @@ function confirmDelete(id) {
             const buttons = document.querySelectorAll('.custom-highlight');
             buttons.forEach(btn => {
                 // Intense highlight para sa text
-                btn.style.textShadow = '0px 0px 8px rgba(9, 1, 1, 0.9)';
+                btn.style.textShadow = '0px 0px 8px rgba(145, 136, 136, 0)';
                 btn.style.letterSpacing = '1px';
                 btn.style.fontSize = '0.75rem';
             });
