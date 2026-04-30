@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_user_submit'])) {
 // Logic for Editing User
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_user_submit'])) {
     $user_id = mysqli_real_escape_string($conn, $_POST['user_id']);
-    $fullname = mysqli_real_escape_string($conn, $_POST['fullname']);
+    $fullname = mysqli_real_escape_string($conn, $_POST['fullname']); 
     $role = mysqli_real_escape_string($conn, $_POST['role']);
     $status = mysqli_real_escape_string($conn, $_POST['status']);
 
@@ -70,6 +70,7 @@ $result = mysqli_query($conn, $query);
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { 
             --app-bg: #f4f7fe;
@@ -78,120 +79,45 @@ $result = mysqli_query($conn, $query);
             --sidebar-width: 260px;
         }
 
-        body { 
-            background-color: var(--app-bg); 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            margin: 0; 
-        }
-        
+        body { background-color: var(--app-bg); font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; }
         .main-content { margin-left: var(--sidebar-width); padding: 35px; }
 
-        /* --- TOP NAV BAR (MATCHING DASHBOARD STYLE) --- */
         .glass-header-container {
-            background: white;
-            border-radius: 35px;
-            padding: 25px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
-            margin-bottom: 40px;
+            background: white; border-radius: 35px; padding: 25px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03); margin-bottom: 40px;
         }
 
-        .header-title-section h2 {
-            color: var(--accent-purple);
-            font-weight: 700;
-            font-size: 1.6rem;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        .header-title-section h2 { color: var(--accent-purple); font-weight: 700; font-size: 1.6rem; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header-title-section p { color: #a3aed0; margin: 0; font-size: 0.95rem; font-weight: 500; }
 
-        .header-title-section p {
-            color: #a3aed0;
-            margin: 0;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        .user-nav-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
+        .user-nav-section { display: flex; align-items: center; gap: 15px; }
         .user-info-text { text-align: right; }
+        .user-name-top { color: #2E073F; font-weight: 600; font-size: 1rem; margin-bottom: 0; }
+        .sign-out-link { color: #AD49E1; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
+        .profile-avatar-pill { width: 55px; height: 55px; background: var(--main-gradient); color: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.4rem; box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25); }
 
-        .user-name-top {
-            color: #2E073F;
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0;
-        }
-
-        .sign-out-link {
-            color: #AD49E1;
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-
-        .profile-avatar-pill {
-            width: 55px;
-            height: 55px;
-            background: var(--main-gradient);
-            color: white;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.4rem;
-            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25);
-        }
-
-        /* --- TABLE & CARDS --- */
-        .table-container { 
-            background: white; 
-            border-radius: 28px; 
-            padding: 20px;
-            box-shadow: 0 15px 35px rgba(111, 66, 193, 0.03); 
-            overflow: hidden; 
-            border: none;
-        }
-        .table thead th { 
-            color: #a3aed0; 
-            font-weight: 700; 
-            font-size: 0.75rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-            padding: 20px;
-            border-bottom: 1px solid #f1f1f7;
-        }
+        .table-container { background: white; border-radius: 28px; padding: 20px; box-shadow: 0 15px 35px rgba(111, 66, 193, 0.03); overflow: hidden; border: none; }
+        .table thead th { color: #a3aed0; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 20px; border-bottom: 1px solid #f1f1f7; }
         .table tbody td { padding: 18px 20px; color: #2b3674; font-weight: 700; font-size: 0.95rem; }
 
         .badge-active { background: #b198be; color: #2E073F; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.7rem; }
         .badge-inactive { background: #cfb6b6; color: #2E073F; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.7rem; }
         
-        .btn-add { 
-            background: var(--main-gradient); 
-            color: white; 
-            border: none; 
-            padding: 12px 28px; 
-            border-radius: 18px; 
-            font-weight: 800; 
-            box-shadow: 0 8px 15px rgba(111, 66, 193, 0.2); 
-            transition: 0.3s; 
-        }
-
+        .btn-add { background: var(--main-gradient); color: white; border: none; padding: 12px 28px; border-radius: 18px; font-weight: 800; box-shadow: 0 8px 15px rgba(111, 66, 193, 0.2); transition: 0.3s; }
         .btn-action-edit { background: #efebf1; color: #7A1CAC; border: none; padding: 10px; border-radius: 12px; transition: 0.3s; }
-        .btn-action-delete { background: #fff5f5; color: #e53e3e; border: none; padding: 10px; border-radius: 12px; transition: 0.3s; }
+        .btn-action-delete { background: #fff5f5; color: #e53e3e; border: none; padding: 10px; border-radius: 12px; transition: 0.3s; cursor: pointer; display: inline-block; }
 
-        /* Modal Styling */
         .modal-content { border-radius: 30px; border: none; }
         .modal-header { background: var(--main-gradient); color: white; border-radius: 30px 30px 0 0; padding: 25px; }
         .form-control, .form-select { border-radius: 15px; border: 2px solid #f1f0f7; padding: 12px; font-weight: 600; background: #fcfaff; }
+
+        /* Custom SweetAlert Styles to match image_2b4b44.png */
+        .swal2-popup { border-radius: 20px !important; padding: 2rem !important; }
+        .swal2-title { font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 700 !important; color: #444 !important; font-size: 1.8rem !important; }
+        .swal2-html-container { font-family: 'Plus Jakarta Sans', sans-serif !important; color: #666 !important; font-weight: 400 !important; }
+        .swal2-confirm { background-color: #7A1CAC !important; border-radius: 10px !important; padding: 12px 30px !important; font-weight: 600 !important; }
+        .swal2-cancel { background-color: #ef4444 !important; border-radius: 10px !important; padding: 12px 30px !important; font-weight: 600 !important; }
 
         @media (max-width: 992px) { .main-content { margin-left: 0; padding: 20px; } }
     </style>
@@ -201,7 +127,6 @@ $result = mysqli_query($conn, $query);
   <?php include 'aside.php'; ?>
 
     <div class="main-content">
-        <!-- TOP NAV BAR (Matched to Dash) -->
         <div class="glass-header-container">
             <div class="header-title-section">
                 <h2>User Management</h2>
@@ -274,7 +199,7 @@ $result = mysqli_query($conn, $query);
         </div>
     </div>
 
-    <!-- ADD USER MODAL -->
+    <!-- MODALS (ADD/EDIT) -->
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg">
@@ -313,7 +238,6 @@ $result = mysqli_query($conn, $query);
         </div>
     </div>
 
-    <!-- EDIT USER MODAL -->
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -363,11 +287,40 @@ $result = mysqli_query($conn, $query);
             document.getElementById('edit_status').value = status;
         }
 
-        function confirmDelete(id) {
-            if (confirm("Master, sigurado ka bang gusto mong i-delete ang user na ito? Hindi na ito mababalik.")) {
-                window.location.href = "manage_user.php?delete_id=" + id;
-            }
+function confirmDelete(id) {
+    Swal.fire({
+        title: 'Delete User?',
+        text: "This action cannot be undone.",
+        icon: 'warning',
+        width: '380px', // Landscape width but compact
+        padding: '0.5rem', // Sobrang nipis para mababa ang height
+        showCancelButton: true,
+        confirmButtonColor: '#9256b3', 
+        cancelButtonColor: '#ef4444',
+        confirmButtonText: 'YES, DELETE',
+        cancelButtonText: 'CANCEL',
+        customClass: {
+            popup: 'rounded-4 shadow-lg',
+            title: 'fs-6 fw-bold m-0 pt-3',
+            htmlContainer: 'small m-0 pb-2',
+            confirmButton: 'btn btn-sm px-3 fw-900 shadow-sm custom-highlight',
+            cancelButton: 'btn btn-sm px-3 fw-900 shadow-sm custom-highlight'
+        },
+        didOpen: () => {
+            const buttons = document.querySelectorAll('.custom-highlight');
+            buttons.forEach(btn => {
+                // Intense highlight para sa text
+                btn.style.textShadow = '0px 0px 8px rgba(9, 1, 1, 0.9)';
+                btn.style.letterSpacing = '1px';
+                btn.style.fontSize = '0.75rem';
+            });
         }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = "manage_user.php?delete_id=" + id;
+        }
+    })
+}
     </script>
 </body>
 </html>
