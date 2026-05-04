@@ -112,7 +112,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="fas fa-map-marker-alt"></i> <span>View Areas</span>
         </a>
         <a href="view_inventory.php" class="nav-item <?php echo ($current_page == 'view_inventory.php') ? 'active' : ''; ?>">
-            <i class="fas fa-boxes"></i> <span>View Inventory</span>
+            <i class="fas fa-boxes"></i> <span>Inventory</span>
         </a>
         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
             <a href="manage_user.php" class="nav-item <?php echo ($current_page == 'manage_user.php') ? 'active' : ''; ?>">

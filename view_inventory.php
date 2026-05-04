@@ -63,8 +63,10 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     
     <style>
         :root { --app-bg: #f4f7fe; --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%); --accent-purple: #8e44ad; --sidebar-width: 260px; }
@@ -80,6 +82,9 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
         .st-active { background: #b198be; color: #2E073F; }
         .st-disposal { background: #f8d7da; color: #721c24; }
         .st-replacement { background: #fff3cd; color: #856404; }
+        .btn-signout { color: var(--accent-purple); transition: all 0.2s ease; }
+        .btn-signout:hover { color: #7A1CAC; text-decoration: underline !important; opacity: 0.8; }
+        .qr-img-table { width: 50px; height: 50px; }
     </style>
 </head>
 <body>
@@ -95,7 +100,7 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
         <div class="d-flex align-items-center gap-3">
             <div class="text-end">
                 <div class="fw-bold"><?php echo htmlspecialchars($display_name); ?></div>
-                <a href="logout.php" class="text-danger small text-decoration-none fw-bold">Sign Out</a>
+                <a href="logout.php" class="btn-signout small text-decoration-none fw-bold">Sign Out</a>
             </div>
             <div style="width:50px; height:50px; background:var(--main-gradient); color:white; border-radius:15px; display:flex; align-items:center; justify-content:center; font-weight:800;">
                 <?php echo strtoupper(substr($display_name, 0, 1)); ?>
@@ -131,6 +136,7 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
                         <tr class="text-muted small">
                             <th>INVENTORY DATE</th>
                             <th>ASSET TAG</th>
+                            <th>QR CODE</th>
                             <th>DETAILS</th>
                             <th>LOCATION</th>
                             <th>STATUS</th>
@@ -148,10 +154,12 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
                         $res = mysqli_query($conn, $sql);
                         while ($row = mysqli_fetch_assoc($res)):
                             $badge = ($row['status'] == 'For Disposal') ? 'st-disposal' : (($row['status'] == 'Replacement') ? 'st-replacement' : 'st-active');
+                            $qr_data = "TAG: ".$row['asset_tag']." | SN: ".$row['serial_number'];
                         ?>
                         <tr>
                             <td class="fw-bold"><?php echo date('F d, Y', strtotime($row['inventory_date'])); ?></td>
                             <td><span class="badge bg-light text-dark border"><?php echo $row['asset_tag']; ?></span></td>
+                            <td><canvas class="table-qr" data-value="<?php echo $qr_data; ?>" style="width:50px; height:50px;"></canvas></td>
                             <td><b><?php echo $row['brand_model']; ?></b><br><small class="text-muted">S/N: <?php echo $row['serial_number']; ?></small></td>
                             <td><?php echo $row['location']; ?></td>
                             <td><span class="status-badge <?php echo $badge; ?>"><?php echo strtoupper($row['status']); ?></span></td>
@@ -175,48 +183,58 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
     </div>
 </div>
 
-<!-- CREATE MODAL (ORIGINAL DESIGN) -->
 <div class="modal fade" id="createItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 30px;">
             <form action="" method="POST" class="p-5">
-                <h2 class="fw-800 mb-4" style="color:var(--accent-purple)">REGISTER ASSET</h2>
-                <div class="row g-4">
-                    <div class="col-md-12">
-                        <label class="form-label-custom">Asset Tag (Optional)</label>
-                        <input type="text" name="manual_tag" class="input-custom" placeholder="Leave blank to auto-generate">
+                <div class="row">
+                    <div class="col-md-9">
+                        <h2 class="fw-800 mb-4" style="color:var(--accent-purple)">REGISTER ASSET</h2>
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <label class="form-label-custom">Asset Tag (Optional)</label>
+                                <input type="text" name="manual_tag" id="in_tag" class="input-custom" placeholder="Leave blank to auto-generate">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label-custom">Serial Number</label>
+                                <input type="text" name="serial_number" id="in_serial" class="input-custom" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label-custom">Brand & Model</label>
+                                <input type="text" name="brand_model" id="in_model" class="input-custom" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">Type</label>
+                                <select name="type" id="in_type" class="input-custom">
+                                    <option value="Laptop">Laptop</option>
+                                    <option value="Desktop">Desktop</option>
+                                    <option value="Monitor">Monitor</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">Location</label>
+                                <input type="text" name="location" class="input-custom" placeholder="e.g. Main Office" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">Inventory Date</label>
+                                <input type="date" name="date" class="input-custom" value="<?php echo date('Y-m-d'); ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label-custom">Status</label>
+                                <select name="status" class="input-custom">
+                                    <option>Active</option>
+                                    <option>Replacement</option>
+                                    <option>For Disposal</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label-custom">Serial Number</label>
-                        <input type="text" name="serial_number" class="input-custom" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label-custom">Brand & Model</label>
-                        <input type="text" name="brand_model" class="input-custom" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label-custom">Type</label>
-                        <select name="type" class="input-custom">
-                            <option value="Laptop">Laptop</option>
-                            <option value="Desktop">Desktop</option>
-                            <option value="Monitor">Monitor</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label-custom">Location</label>
-                        <input type="text" name="location" class="input-custom" placeholder="e.g. Main Office" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label-custom">Inventory Date</label>
-                        <input type="date" name="date" class="input-custom" value="<?php echo date('Y-m-d'); ?>">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label-custom">Status</label>
-                        <select name="status" class="input-custom">
-                            <option>Active</option>
-                            <option>Replacement</option>
-                            <option>For Disposal</option>
-                        </select>
+                    <div class="col-md-3 d-flex flex-column align-items-center justify-content-center border-start">
+                        <label class="form-label-custom mb-3">QR Preview</label>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 20px; border: 2px dashed #ccc;">
+                            <canvas id="modal_qr_preview"></canvas>
+                        </div>
+                        <p class="small text-muted mt-2">Real-time Update</p>
                     </div>
                 </div>
                 <div class="text-center mt-5">
@@ -227,7 +245,6 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
     </div>
 </div>
 
-<!-- EDIT MODAL -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 30px;">
@@ -272,7 +289,43 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // EDIT BUTTON HANDLER
+    // 1. GENERATE TABLE QR CODES
+    function generateTableQRs() {
+        document.querySelectorAll('.table-qr').forEach(canvas => {
+            new QRious({
+                element: canvas,
+                value: canvas.getAttribute('data-value'),
+                size: 100
+            });
+        });
+    }
+
+    // 2. REAL-TIME QR PREVIEW FOR CREATE MODAL
+    function updateModalQR() {
+        const tag = document.getElementById('in_tag').value || "AUTO-GENERATED";
+        const serial = document.getElementById('in_serial').value || "---";
+        const model = document.getElementById('in_model').value || "---";
+        const qrContent = `TAG: ${tag} | SN: ${serial} | MODEL: ${model}`;
+
+        new QRious({
+            element: document.getElementById('modal_qr_preview'),
+            value: qrContent,
+            size: 160,
+            level: 'M'
+        });
+    }
+
+    // Listeners for Real-time
+    ['in_tag', 'in_serial', 'in_model'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateModalQR);
+    });
+
+    $(document).ready(function() {
+        generateTableQRs();
+        updateModalQR(); // Initial preview
+    });
+
+    // 3. EDIT BUTTON HANDLER
     $('.editBtn').on('click', function() {
         $('#edit_id').val($(this).data('id'));
         $('#edit_tag').val($(this).data('tag'));
@@ -283,49 +336,42 @@ $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
         new bootstrap.Modal(document.getElementById('editModal')).show();
     });
 
-    // CENTERED LANDSCAPE PDF EXPORT
+    // 4. PDF EXPORT WITH QR IMAGES
     function exportInventoryPDF() {
         const tableHtml = document.getElementById('table-to-export').cloneNode(true);
-        const actionElements = tableHtml.querySelectorAll('.no-export');
-        actionElements.forEach(el => el.remove());
+        tableHtml.querySelectorAll('.no-export').forEach(el => el.remove());
+
+        // Convert Canvas QR to Image QR for PDF compatibility
+        const originalCanvases = document.querySelectorAll('.table-qr');
+        const clonedCanvases = tableHtml.querySelectorAll('.table-qr');
+        clonedCanvases.forEach((canvas, i) => {
+            const img = document.createElement('img');
+            img.src = originalCanvases[i].toDataURL("image/png");
+            img.style.width = "45px";
+            canvas.parentNode.replaceChild(img, canvas);
+        });
 
         const container = document.createElement('div');
-        container.style.width = '1000px'; 
-        container.style.margin = '0 auto';
         container.style.padding = '20px';
         container.style.backgroundColor = 'white';
-        container.style.display = 'flex';
-        container.style.flexDirection = 'column';
-        container.style.alignItems = 'center';
-
-        const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-        const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         
+        const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
         container.innerHTML = `
-            <div style="width: 100%; text-align: center; border-bottom: 3px solid #7A1CAC; padding-bottom: 10px; margin-bottom: 25px; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <h1 style="color: #7A1CAC; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 1px;">INSPIRO RELIA INC.</h1>
-                <p style="font-weight: 700; margin: 5px 0; font-size: 16px; color: #333;">COMPUTER ASSET RECORD SYSTEM</p>
-                <p style="color: #8e44ad; font-weight: 800; margin: 5px 0; font-size: 18px; text-transform: uppercase;">Inventory Report</p>
-                <p style="margin: 5px 0; font-size: 14px;">Inventory Date: <b>${today}</b></p>
-                <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                    Report Generated: ${today} ${time} | By: ${'<?php echo $display_name; ?>'}
-                </div>
+            <div style="text-align: center; border-bottom: 3px solid #7A1CAC; margin-bottom: 20px; font-family: sans-serif;">
+                <h1 style="color: #7A1CAC; margin:0;">INSPIRO RELIA INC.</h1>
+                <p style="margin:5px 0;">COMPUTER ASSET REPORT</p>
+                <p style="font-size:12px; color:#666;">Date: ${today}</p>
             </div>
         `;
-        
-        const table = tableHtml.querySelector('table');
-        table.style.width = '100%'; 
-        table.style.borderCollapse = 'collapse';
         container.appendChild(tableHtml);
 
         const opt = {
-            margin: [0.5, 0.5, 0.5, 0.5],
-            filename: `Inspiro_Report_${today}.pdf`,
-            image: { type: 'jpeg', quality: 1 },
-            html2canvas: { scale: 2, useCORS: true, width: 1050 },
+            margin: 0.3,
+            filename: `Inventory_Report_${today}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
             jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
         };
-
         html2pdf().set(opt).from(container).save();
     }
 
