@@ -11,17 +11,47 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 
-$alpha_areas = [
-    ['name' => 'BDO'], ['name' => 'BDO Insure'], ['name' => 'BDO Life'], 
-    ['name' => 'Pacsan'], ['name' => 'BDO Core'], ['name' => 'Flight Center']
-];
-$beta_areas = [
-    ['name' => 'Grab Support'], ['name' => 'Grab COE'], ['name' => 'Shark Ninja'], 
-    ['name' => 'Hallmark'], ['name' => 'ANA'], ['name' => 'AUB']
-];
-$other_areas = [
-    ['name' => "Manila Doctor's Hospital"], ['name' => 'Ignite'], ['name' => 'Viagogo']
-];
+// --- INITIALIZE LISTS ---
+if (!isset($_SESSION['alpha_list'])) {
+    $_SESSION['alpha_list'] = [
+        ['name' => 'BDO'], ['name' => 'BDO Insure'], ['name' => 'BDO Life'], 
+        ['name' => 'Pacsan'], ['name' => 'BDO Core'], ['name' => 'Flight Center'],
+        ['name' => "Manila Doctor's Hospital"], ['name' => 'Ignite'], ['name' => 'Viagogo']
+    ];
+}
+if (!isset($_SESSION['beta_list'])) {
+    $_SESSION['beta_list'] = [
+        ['name' => 'Grab Support'], ['name' => 'Grab COE'], ['name' => 'Shark Ninja'], 
+        ['name' => 'Hallmark'], ['name' => 'ANA'], ['name' => 'AUB']
+    ];
+}
+
+// --- ADD LOGIC ---
+if (isset($_POST['add_area'])) {
+    $new_name = $_POST['area_name'];
+    $building = $_POST['building_type'];
+    if (!empty($new_name)) {
+        if ($building == 'Alpha') { $_SESSION['alpha_list'][] = ['name' => $new_name]; } 
+        else { $_SESSION['beta_list'][] = ['name' => $new_name]; }
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit();
+    }
+}
+
+// --- DELETE LOGIC ---
+if (isset($_GET['del'])) {
+    $target = $_GET['del'];
+    $type = $_GET['type'];
+    if ($type == 'alpha') {
+        foreach($_SESSION['alpha_list'] as $k => $v) { if($v['name'] == $target) unset($_SESSION['alpha_list'][$k]); }
+        $_SESSION['alpha_list'] = array_values($_SESSION['alpha_list']);
+    } else {
+        foreach($_SESSION['beta_list'] as $k => $v) { if($v['name'] == $target) unset($_SESSION['beta_list'][$k]); }
+        $_SESSION['beta_list'] = array_values($_SESSION['beta_list']);
+    }
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -30,170 +60,45 @@ $other_areas = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inspiro | View Areas</title>
-    
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        :root {
-            --app-bg: #f4f7fe; /* Patterned after image_d10958.png */
-            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
-            --accent-purple: #8e44ad;
-            --text-main: #2d3436;
-            --sidebar-width: 260px;
-        }
+        :root { --app-bg: #f4f7fe; --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%); --accent-purple: #8e44ad; --sidebar-width: 260px; }
+        body { background-color: var(--app-bg); font-family: 'Plus Jakarta Sans', sans-serif; }
+        .content { margin-left: var(--sidebar-width); padding: 35px; }
 
-        body {
-            background-color: var(--app-bg);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--text-main);
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .content { 
-            margin-left: var(--sidebar-width); 
-            padding: 35px; /* Consistent spacing */
-        }
-
-        /* --- TOP NAV BAR (EXACT MATCH TO DASHBOARD STYLE) --- */
         .glass-header-container {
-            background: white;
-            border-radius: 35px; /* High rounding from image */
-            padding: 25px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
-            margin-bottom: 40px;
+            background: white; border-radius: 35px; padding: 25px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03); margin-bottom: 40px;
         }
 
-        .header-title-section h2 {
-            color: var(--accent-purple);
-            font-weight: 700;
-            font-size: 1.6rem;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .header-title-section p {
-            color: #a3aed0;
-            margin: 0;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        .user-nav-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-info-text {
-            text-align: right;
-        }
-
-        .user-name-top {
-            color: #2E073F;
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0;
-        }
-
-        .sign-out-link {
-            color: #AD49E1;
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-
-        .sign-out-link:hover { opacity: 0.7; }
-
-        .profile-avatar-pill {
-            width: 55px;
-            height: 55px;
-            background: var(--main-gradient);
-            color: white;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.4rem;
-            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25);
-        }
-
-        /* --- AREA CARDS --- */
-        .section-title {
-            font-weight: 800;
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            color: var(--accent-purple);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            letter-spacing: 1px;
-        }
-        .section-title::after {
-            content: "";
-            flex-grow: 1;
-            height: 2px;
-            background: linear-gradient(90deg, #e2e8f0, transparent);
+        .btn-add-area {
+            background: var(--main-gradient); color: white; border: none; padding: 10px 20px; border-radius: 15px; font-weight: 600; transition: 0.3s;
         }
 
         .area-card {
-            background: white;
-            border-radius: 28px;
-            border: none;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-            overflow: hidden;
-            height: 100%;
-            position: relative;
+            background: white; border-radius: 28px; border: none; transition: 0.4s; overflow: hidden; height: 100%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.03);
         }
-
-        .area-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(111, 66, 193, 0.15);
+        .area-card:hover { transform: translateY(-10px); }
+        
+        .delete-overlay {
+            position: absolute; top: 8px; right: 8px; background: rgba(255, 0, 0, 0.1); color: #ff4757;
+            border: none; width: 22px; height: 22px; border-radius: 6px; font-size: 0.65rem;
+            display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; z-index: 5;
         }
+        .area-card:hover .delete-overlay { opacity: 1; }
 
-        .card-header-label {
-            background: #fcfaff;
-            padding: 15px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: #3b1845;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #f1f0f7;
-        }
-
-        .pc-icon-wrapper {
-            padding: 25px 0;
-            font-size: 2.5rem;
-            background: var(--main-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .stat-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            background: #ffffff;
-            padding-bottom: 10px;
-        }
-
-        .stat-box { padding: 10px 5px; }
-        .stat-box h5 { margin: 0; font-weight: 800; color: #1e293b; font-size: 1.2rem; }
+        .card-header-label { background: #fcfaff; padding: 15px; font-size: 0.75rem; font-weight: 800; color: #3b1845; text-transform: uppercase; border-bottom: 1px solid #f1f0f7; }
+        .pc-icon-wrapper { padding: 25px 0; font-size: 2.5rem; background: var(--main-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-container { display: grid; grid-template-columns: 1fr 1fr; background: #ffffff; padding-bottom: 10px; }
+        .stat-box h5 { margin: 0; font-weight: 800; color: #1e293b; }
         .stat-box small { font-size: 0.6rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
-
-        @media (max-width: 992px) {
-            .content { margin-left: 0; padding: 20px; }
-            .glass-header-container { padding: 20px; border-radius: 20px; }
-        }
+        .section-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 2rem; color: var(--accent-purple); display: flex; align-items: center; gap: 15px; }
+        .section-title::after { content: ""; flex-grow: 1; height: 2px; background: linear-gradient(90deg, #e2e8f0, transparent); }
+        @media (max-width: 992px) { .content { margin-left: 0; } }
     </style>
 </head>
 <body>
@@ -201,86 +106,99 @@ $other_areas = [
 <?php include 'aside.php'; ?>
 
 <div class="content">
-    <!-- TOP NAV BAR (Matching image_d10958.png style) -->
     <div class="glass-header-container">
-        <div class="header-title-section">
-            <h2>VIEW AREAS</h2>
-            <p>Location Management & Monitoring</p>
+        <div>
+            <h2 style="color: var(--accent-purple); font-weight: 700; margin: 0;">VIEW AREAS</h2>
+            <p style="color: #a3aed0; margin: 0;">Location Management & Monitoring</p>
         </div>
-
-        <div class="user-nav-section">
-            <div class="user-info-text">
-                <div class="user-name-top"><?php echo htmlspecialchars($display_name); ?></div>
-                <a href="logout.php" class="sign-out-link">Sign Out</a>
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn-add-area" data-bs-toggle="modal" data-bs-target="#addModal"><i class="fas fa-plus me-2"></i> Add Area</button>
+            <div class="text-end">
+                <div style="font-weight: 600;"><?php echo htmlspecialchars($display_name); ?></div>
+                <a href="logout.php" style="color: #AD49E1; font-size: 0.8rem; text-decoration: none; font-weight: 600;">Sign Out</a>
             </div>
-            <div class="profile-avatar-pill">
+            <div style="width: 50px; height: 50px; background: var(--main-gradient); border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
                 <?php echo strtoupper(substr($display_name, 0, 1)); ?>
             </div>
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
+    <!-- ALPHA -->
     <div class="section-title">ALPHA BUILDING & OTHERS</div>
     <div class="row g-4 mb-5">
-        <?php 
-        foreach(array_merge($alpha_areas, $other_areas) as $area): 
+        <?php foreach($_SESSION['alpha_list'] as $area): 
             $name = $area['name'];
-            $safe_name = mysqli_real_escape_string($conn, $name);
-            $res = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '$safe_name'");
+            $res = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '".mysqli_real_escape_string($conn, $name)."'");
             $count = mysqli_fetch_assoc($res)['t'] ?? 0;
         ?>
         <div class="col-xl-2 col-lg-3 col-md-4 col-6">
-            <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
-                <div class="area-card text-center">
+            <div class="area-card text-center">
+                <a href="?del=<?php echo urlencode($name); ?>&type=alpha" class="delete-overlay" onclick="return confirm('Delete area?')"><i class="fas fa-times"></i></a>
+                <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
                     <div class="card-header-label"><?php echo $name; ?></div>
-                    <div class="pc-icon-wrapper">
-                        <i class="fas fa-desktop"></i>
-                    </div>
+                    <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
                     <div class="stat-container">
-                        <div class="stat-box border-end">
-                            <h5 style="color: #6f42c1;"><?php echo $count; ?></h5>
-                            <small>In Use</small>
-                        </div>
-                        <div class="stat-box">
-                            <h5>0</h5>
-                            <small>Avail</small>
-                        </div>
+                        <div class="stat-box border-end"><h5><?php echo $count; ?></h5><small>In Use</small></div>
+                        <div class="stat-box"><h5>0</h5><small>Avail</small></div>
                     </div>
-                </div>
-            </a>
+                </a>
+            </div>
         </div>
         <?php endforeach; ?>
     </div>
 
+    <!-- BETA -->
     <div class="section-title">BETA BUILDING</div>
     <div class="row g-4 mb-4">
-        <?php foreach($beta_areas as $area): 
+        <?php foreach($_SESSION['beta_list'] as $area): 
             $name = $area['name'];
-            $safe_name = mysqli_real_escape_string($conn, $name);
-            $res = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '$safe_name'");
+            $res = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '".mysqli_real_escape_string($conn, $name)."'");
             $count = mysqli_fetch_assoc($res)['t'] ?? 0;
         ?>
         <div class="col-xl-2 col-lg-3 col-md-4 col-6">
-            <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
-                <div class="area-card text-center">
+            <div class="area-card text-center">
+                <a href="?del=<?php echo urlencode($name); ?>&type=beta" class="delete-overlay" onclick="return confirm('Delete area?')"><i class="fas fa-times"></i></a>
+                <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
                     <div class="card-header-label"><?php echo $name; ?></div>
-                    <div class="pc-icon-wrapper">
-                        <i class="fas fa-desktop"></i>
-                    </div>
+                    <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
                     <div class="stat-container">
-                        <div class="stat-box border-end">
-                            <h5 style="color: #d63384;"><?php echo $count; ?></h5>
-                            <small>In Use</small>
-                        </div>
-                        <div class="stat-box">
-                            <h5>0</h5>
-                            <small>Avail</small>
-                        </div>
+                        <div class="stat-box border-end"><h5><?php echo $count; ?></h5><small>In Use</small></div>
+                        <div class="stat-box"><h5>0</h5><small>Avail</small></div>
                     </div>
-                </div>
-            </a>
+                </a>
+            </div>
         </div>
         <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 25px;">
+            <div class="modal-header border-0 p-4">
+                <h5 style="color: #7A1CAC; font-weight: 800;">ADD AREA</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body px-4 pb-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-700">Area Name</label>
+                        <input type="text" name="area_name" class="form-control" required style="border-radius: 12px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-700">Building</label>
+                        <select name="building_type" class="form-select" style="border-radius: 12px;">
+                            <option value="Alpha">Alpha Building</option>
+                            <option value="Beta">Beta Building</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4">
+                    <button type="submit" name="add_area" class="btn-add-area w-100">Save</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
