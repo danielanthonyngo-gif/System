@@ -113,7 +113,7 @@ if (isset($_GET['del'])) {
     <div class="glass-header-container">
         <div>
             <h2 style="color: var(--accent-purple); font-weight: 700; margin: 0;">VIEW AREAS</h2>
-            <p style="color: #a3aed0; margin: 0;">Location Management & Monitoring</p>
+            <p style="color: #a3aed0; margin: 0;">Location Record & Monitoring</p>
         </div>
         <div class="d-flex align-items-center gap-3">
             <div class="text-end">
