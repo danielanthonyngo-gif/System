@@ -72,12 +72,14 @@ if (isset($_GET['del'])) {
         .glass-header-container {
             background: white; border-radius: 35px; padding: 25px 40px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03); margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03); margin-bottom: 30px;
         }
 
         .btn-add-area {
-            background: var(--main-gradient); color: white; border: none; padding: 10px 20px; border-radius: 15px; font-weight: 600; transition: 0.3s;
+            background: var(--main-gradient); color: white; border: none; padding: 12px 25px; border-radius: 18px; font-weight: 700; transition: 0.3s;
+            box-shadow: 0 8px 15px rgba(122, 28, 172, 0.2);
         }
+        .btn-add-area:hover { transform: translateY(-2px); box-shadow: 0 12px 20px rgba(122, 28, 172, 0.3); color: white; }
 
         .area-card {
             background: white; border-radius: 28px; border: none; transition: 0.4s; overflow: hidden; height: 100%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.03);
@@ -85,9 +87,9 @@ if (isset($_GET['del'])) {
         .area-card:hover { transform: translateY(-10px); }
         
         .delete-overlay {
-            position: absolute; top: 8px; right: 8px; background: rgba(255, 0, 0, 0.1); color: #ff4757;
-            border: none; width: 22px; height: 22px; border-radius: 6px; font-size: 0.65rem;
-            display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; z-index: 5;
+            position: absolute; top: 10px; right: 10px; background: rgba(255, 0, 0, 0.1); color: #ff4757;
+            border: none; width: 25px; height: 25px; border-radius: 8px; font-size: 0.7rem;
+            display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; z-index: 5;
         }
         .area-card:hover .delete-overlay { opacity: 1; }
 
@@ -96,8 +98,10 @@ if (isset($_GET['del'])) {
         .stat-container { display: grid; grid-template-columns: 1fr 1fr; background: #ffffff; padding-bottom: 10px; }
         .stat-box h5 { margin: 0; font-weight: 800; color: #1e293b; }
         .stat-box small { font-size: 0.6rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+        
         .section-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 2rem; color: var(--accent-purple); display: flex; align-items: center; gap: 15px; }
         .section-title::after { content: ""; flex-grow: 1; height: 2px; background: linear-gradient(90deg, #e2e8f0, transparent); }
+        
         @media (max-width: 992px) { .content { margin-left: 0; } }
     </style>
 </head>
@@ -112,7 +116,6 @@ if (isset($_GET['del'])) {
             <p style="color: #a3aed0; margin: 0;">Location Management & Monitoring</p>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <button class="btn-add-area" data-bs-toggle="modal" data-bs-target="#addModal"><i class="fas fa-plus me-2"></i> Add Area</button>
             <div class="text-end">
                 <div style="font-weight: 600;"><?php echo htmlspecialchars($display_name); ?></div>
                 <a href="logout.php" style="color: #AD49E1; font-size: 0.8rem; text-decoration: none; font-weight: 600;">Sign Out</a>
@@ -121,6 +124,13 @@ if (isset($_GET['del'])) {
                 <?php echo strtoupper(substr($display_name, 0, 1)); ?>
             </div>
         </div>
+    </div>
+
+    <!-- BUTTON ALIGNED TO THE RIGHT -->
+    <div class="d-flex justify-content-end mb-4">
+        <button class="btn-add-area" data-bs-toggle="modal" data-bs-target="#addModal">
+            <i class="fas fa-plus-circle me-2"></i> ADD NEW AREA
+        </button>
     </div>
 
     <!-- ALPHA -->
@@ -176,26 +186,26 @@ if (isset($_GET['del'])) {
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 25px;">
-            <div class="modal-header border-0 p-4">
-                <h5 style="color: #7A1CAC; font-weight: 800;">ADD AREA</h5>
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 style="color: #7A1CAC; font-weight: 800;">ADD NEW AREA</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">
-                <div class="modal-body px-4 pb-4">
+                <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label small fw-700">Area Name</label>
-                        <input type="text" name="area_name" class="form-control" required style="border-radius: 12px;">
+                        <input type="text" name="area_name" class="form-control" required style="border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0;">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-700">Building</label>
-                        <select name="building_type" class="form-select" style="border-radius: 12px;">
-                            <option value="Alpha">Alpha Building</option>
+                        <label class="form-label small fw-700">Select Building</label>
+                        <select name="building_type" class="form-select" style="border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0;">
+                            <option value="Alpha">Alpha Building & Others</option>
                             <option value="Beta">Beta Building</option>
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer border-0 p-4">
-                    <button type="submit" name="add_area" class="btn-add-area w-100">Save</button>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="submit" name="add_area" class="btn-add-area w-100">SAVE NEW AREA</button>
                 </div>
             </form>
         </div>
