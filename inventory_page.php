@@ -394,3 +394,5 @@ $current_page = 'view_area.php';
     </script>
 </body>
 </html>
+
+s
