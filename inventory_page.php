@@ -98,15 +98,29 @@ $current_page = 'view_area.php';
             color: white;
         }
 
-        .dropdown-item {
+        .filter-dropdown .dropdown-item {
             padding: 10px 15px;
             font-size: 0.85rem;
             font-weight: 600;
+            transition: all 0.2s ease;
         }
 
-        .dropdown-item.active {
+        .filter-dropdown .dropdown-item.active {
             background: var(--main-gradient) !important;
             color: white !important;
+        }
+
+        .filter-dropdown .dropdown-header {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #adb5bd;
+            padding: 10px 15px 5px;
+        }
+
+        .filter-dropdown .dropdown-divider {
+            margin: 8px 0;
+            border-top: 1px solid #f1f1f1;
         }
 
         .custom-table thead th {
@@ -128,13 +142,12 @@ $current_page = 'view_area.php';
     <?php include 'aside.php'; ?>
     
     <div class="content-wrapper">
-        <!-- Header -->
         <div class="glass-header">
             <div>
                 <h4 class="fw-800 m-0"><?php echo htmlspecialchars($location); ?> <span style="background: var(--main-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">INVENTORY</span></h4>
                 <small class="text-muted fw-700">Asset Management System</small>
             </div>
-            <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'], 0, 1)); ?></div>
+            <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'] ?? 'A', 0, 1)); ?></div>
         </div>
 
         <div class="table-card">
@@ -150,18 +163,25 @@ $current_page = 'view_area.php';
                         <i class="fas fa-arrow-left me-2"></i> Back
                     </a>
 
-                    <div class="dropdown">
-                        <button class="btn btn-action-main dropdown-toggle border bg-white shadow-sm" type="button" id="filterDropdown" data-bs-toggle="dropdown">
-                            <i class="fas fa-filter me-2" style="color: var(--accent-pink);"></i> 
+                    <!-- SINGLE BUTTON FILTER DROPDOWN -->
+                    <div class="dropdown filter-dropdown">
+                        <button class="btn btn-action-main dropdown-toggle border bg-white shadow-sm" type="button" id="filterDropdown" data-bs-toggle="dropdown" style="border-radius: 20px;">
+                            <i class="fas fa-filter me-2" style="color: #0d6efd;"></i> 
                             Filter: <span id="activeFilterLabel" class="fw-800" style="color: var(--accent-purple);">All</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2" style="border-radius: 15px;">
-                            <li><a class="dropdown-item rounded-3 active" href="#" onclick="setFilter('All', this, 'All')">All Assets</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2" style="border-radius: 15px; min-width: 200px;">
+                            <li><h6 class="dropdown-header">By Status</h6></li>
+                            <li><a class="dropdown-item rounded-3 active" href="#" onclick="setFilter('All', this, 'All Status')">All Status</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Active', this, 'Active')">Active</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Replacement', this, 'Replacement')">Replacement</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('For Disposal', this, 'For Disposal')">For Disposal</a></li>
+                            
                             <li><hr class="dropdown-divider"></li>
+                            
+                            <li><h6 class="dropdown-header">By Type</h6></li>
                             <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Laptop', this, 'Laptops')">Laptops</a></li>
                             <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Desktop', this, 'Desktops')">Desktops</a></li>
                             <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Monitor', this, 'Monitors')">Monitors</a></li>
-                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Peripheral', this, 'Peripherals')">Peripherals</a></li>
                         </ul>
                     </div>
 
@@ -171,7 +191,6 @@ $current_page = 'view_area.php';
                 </div>
             </div>
 
-            <!-- Table -->
             <div class="table-responsive">
                 <table class="table custom-table align-middle" id="assetTable">
                     <thead>
@@ -179,21 +198,25 @@ $current_page = 'view_area.php';
                             <th>Asset Tag</th>
                             <th>Details</th>
                             <th>Type</th>
-                            <th>Location</th>
+                            <th>Location/Status</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php while($row = mysqli_fetch_assoc($assets)): ?>
-                        <!-- Ginamit natin dito master yung asset_type mula sa database mo -->
-                        <tr class="asset-row" data-type="<?php echo $row['asset_type'] ?? 'N/A'; ?>">
+                        <tr class="asset-row" 
+                            data-type="<?php echo $row['asset_type'] ?? 'N/A'; ?>" 
+                            data-status="<?php echo $row['status'] ?? 'N/A'; ?>">
                             <td class="fw-800"><?php echo $row['asset_tag']; ?></td>
                             <td>
                                 <div class="fw-700"><?php echo $row['brand_model']; ?></div>
                                 <div class="small text-muted"><?php echo $row['serial_number']; ?></div>
                             </td>
                             <td><span class="fw-600 text-muted"><?php echo $row['asset_type'] ?? 'N/A'; ?></span></td>
-                            <td><span class="badge bg-light text-primary border rounded-pill px-3"><?php echo $row['location']; ?></span></td>
+                            <td>
+                                <span class="badge bg-light text-primary border rounded-pill px-3"><?php echo $row['location']; ?></span>
+                                <span class="d-none status-cell"><?php echo $row['status']; ?></span>
+                            </td>
                             <td class="text-center">
                                 <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">View</button>
                             </td>
@@ -225,7 +248,7 @@ $current_page = 'view_area.php';
     </div>
 
     <script>
-        let currentFilter = 'All';
+        let currentFilterValue = 'All';
 
         function applyFilters() {
             let search = document.getElementById('assetSearch').value.toLowerCase();
@@ -235,10 +258,10 @@ $current_page = 'view_area.php';
             rows.forEach(row => {
                 let text = row.innerText.toLowerCase();
                 let type = row.getAttribute('data-type');
+                let status = row.getAttribute('data-status');
                 
                 let matchesSearch = text.includes(search);
-                // Tinitignan kung match sa filter (Laptop, Desktop, etc.)
-                let matchesFilter = (currentFilter === 'All' || type === currentFilter);
+                let matchesFilter = (currentFilterValue === 'All' || type === currentFilterValue || status === currentFilterValue);
 
                 if (matchesSearch && matchesFilter) {
                     row.style.display = "";
@@ -250,11 +273,11 @@ $current_page = 'view_area.php';
             document.getElementById('noResultsRow').style.display = found ? "none" : "";
         }
 
-        function setFilter(type, element, label) {
-            document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+        function setFilter(filterVal, element, label) {
+            document.querySelectorAll('.filter-dropdown .dropdown-item').forEach(i => i.classList.remove('active'));
             element.classList.add('active');
             document.getElementById('activeFilterLabel').innerText = label;
-            currentFilter = type;
+            currentFilterValue = filterVal;
             applyFilters();
         }
 
