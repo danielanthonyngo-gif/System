@@ -238,7 +238,11 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
                             <th>ITEM DETAILS</th>
                             <th>LOCATION</th>
                             <th>STATUS</th>
+                             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
                             <th class="no-export text-center">ACTION</th>
+                            <?php endif; ?>
+
+
                         </tr>
                     </thead>
                     <tbody>
@@ -263,17 +267,20 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
                             </td>
                             <td class="small"><?php echo $row['location']; ?></td>
                             <td><span class="status-badge <?php echo $badge; ?>"><?php echo $row['status']; ?></span></td>
-                            <td class="no-export text-center">
-                                <button class="btn btn-sm btn-outline-secondary border-0 editBtn" 
-                                    data-id="<?php echo $row['id']; ?>"
-                                    data-tag="<?php echo $row['asset_tag']; ?>"
-                                    data-serial="<?php echo $row['serial_number']; ?>"
-                                    data-model="<?php echo $row['brand_model']; ?>"
-                                    data-loc="<?php echo $row['location']; ?>"
-                                    data-status="<?php echo $row['status']; ?>">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
+
+                             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
+                                <td class="no-export text-center">
+                                    <button class="btn btn-sm btn-outline-secondary border-0 editBtn" 
+                                        data-id="<?php echo $row['id']; ?>"
+                                        data-tag="<?php echo $row['asset_tag']; ?>"
+                                        data-serial="<?php echo $row['serial_number']; ?>"
+                                        data-model="<?php echo $row['brand_model']; ?>"
+                                        data-loc="<?php echo $row['location']; ?>"
+                                        data-status="<?php echo $row['status']; ?>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </td>
+                            <?php endif; ?>
                         </tr>
                         <?php endwhile; ?>
                     </tbody>
