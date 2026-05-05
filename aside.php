@@ -1,10 +1,12 @@
-<aside class="sidebar">
+<aside>
 <?php
 // Aside.php - Sidebar Component
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@900&display=swap" rel="stylesheet">
+<!-- Font Awesome for the hamburger icon -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <style>
     :root {
@@ -15,6 +17,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         --logo-purple: #902694; 
     }
 
+    /* Sidebar Base */
     .sidebar {
         width: var(--sidebar-width);
         height: 100vh;
@@ -25,8 +28,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
         color: white;
         z-index: 1000;
         box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+        transition: transform 0.3s ease-in-out;
     }
 
+    /* Brand Section */
     .brand-section {
         padding: 45px 10px;
         display: flex;
@@ -55,11 +60,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
         margin-right: 15px; 
     }
 
-    /* MAS BINABA PANG DOT - 18px position */
     .logo-r-custom::after {
         content: '';
         position: absolute;
-        top: 18px; /* Mula 14px, ginawa nating 18px para mas bumaba pa */
+        top: 18px; 
         right: -18px; 
         width: 14px;
         height: 14px;
@@ -67,15 +71,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
         border-radius: 50%;
     }
 
-    .logo-o {
-        margin-left: 10px;
-    }
+    .logo-o { margin-left: 10px; }
+    .stem { display: inline-block; line-height: 1; }
 
-    .stem {
-        display: inline-block;
-        line-height: 1;
-    }
-
+    /* Nav Menu */
     .nav-menu { padding-top: 10px; }
     .nav-item {
         padding: 15px 25px;
@@ -85,7 +84,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         text-decoration: none !important;
         transition: 0.3s;
         border-left: 5px solid transparent;
-        font-size: 1.20rem;
+        font-size: 1.1rem;
     }
     .nav-item i { margin-right: 15px; width: 25px; text-align: center; }
     .nav-item:hover { background: var(--sidebar-hover); color: white !important; }
@@ -94,10 +93,69 @@ $current_page = basename($_SERVER['PHP_SELF']);
         border-left: 5px solid var(--accent-color);
     }
 
-    .content-wrapper, .content { margin-left: var(--sidebar-width); }
+    /* Content Wrapper */
+    .content-wrapper, .main-content { 
+        margin-left: var(--sidebar-width); 
+        transition: margin 0.3s ease;
+    }
+
+    /* Mobile Toggle Button */
+    .mobile-toggle {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1100;
+        background: #2E073F;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 992px) {
+        .mobile-toggle { display: block; }
+        
+        .sidebar {
+            transform: translateX(-100%);
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .content-wrapper, .main-content {
+            margin-left: 0 !important;
+        }
+
+        /* Overlay when sidebar is open */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.active { display: block; }
+    }
 </style>
 
-<div class="sidebar">
+<!-- Hamburger Button -->
+<button class="mobile-toggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- Overlay for clicking outside sidebar -->
+<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="sidebar" id="sidebar">
     <div class="brand-section">
         <div class="logo-container">
             <span>inspi</span><span class="logo-r-custom"><span class="stem">ı</span></span><span class="logo-o">o</span>
@@ -121,4 +179,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <?php endif; ?>
     </nav>
 </div>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+</script>
 </aside>
