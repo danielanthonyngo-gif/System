@@ -37,7 +37,6 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
@@ -112,8 +111,6 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
             transition: 0.2s;
         }
 
-        .sign-out-link:hover { opacity: 0.7; }
-
         .profile-avatar-pill {
             width: 55px; height: 55px;
             background: var(--main-gradient);
@@ -145,29 +142,12 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
         .bg-disposal { background: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%); }
         .bg-replacement { background: linear-gradient(135deg, #2E073F 0%, #2E073F 100%); }
 
-        .calendar-card {
+        .chart-card {
             background: white;
             border-radius: 30px;
             padding: 35px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.02);
-            margin-bottom: 30px;
-            height: 100%; /* Pantay na taas */
-        }
-
-        /* LIIT NG DATE SA CALENDAR */
-        .calendar-table td {
-            padding: 8px !important;
-            font-size: 0.85rem;
-        }
-
-        .current-day {
-            background: var(--main-gradient);
-            color: white;
-            width: 32px; height: 32px; 
-            line-height: 32px;
-            border-radius: 10px;
-            font-weight: 800;
-            display: inline-block;
+            height: 100%;
         }
 
         @media (max-width: 992px) {
@@ -181,7 +161,6 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
 <?php include 'aside.php'; ?>
 
 <div class="content-wrapper">
-    <!-- TOP NAV BAR -->
     <div class="glass-header-container">
         <div class="header-title-section">
             <h2>DASHBOARD</h2>
@@ -200,97 +179,65 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
     </div>
 
     <div class="container-fluid p-0">
-        <!-- STATUS CARDS -->
         <div class="row g-4 mb-4">
             <div class="col-md-4">
                 <div class="status-card bg-inuse">
-                    <p class="mb-1 text-uppercase small fw-800" style="letter-spacing: 1px;">In Use Assets</p>
-                    <h2 class="display-6 fw-800 mb-0"><?php echo $count_in_use; ?></h2>
+                    <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Use Assets</p>
+                    <h2 class="display-6 fw-bold mb-0"><?php echo $count_in_use; ?></h2>
                     <i class="fas fa-desktop card-icon"></i>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="status-card bg-disposal">
-                    <p class="mb-1 text-uppercase small fw-800" style="letter-spacing: 1px;">For Disposal</p>
-                    <h2 class="display-6 fw-800 mb-0"><?php echo $count_disposal; ?></h2>
+                    <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">For Disposal</p>
+                    <h2 class="display-6 fw-bold mb-0"><?php echo $count_disposal; ?></h2>
                     <i class="fas fa-dumpster card-icon"></i>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="status-card bg-replacement">
-                    <p class="mb-1 text-uppercase small fw-800" style="letter-spacing: 1px;">Replacement</p>
-                    <h2 class="display-6 fw-800 mb-0"><?php echo $count_replacement; ?></h2>
+                    <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">Replacement</p>
+                    <h2 class="display-6 fw-bold mb-0"><?php echo $count_replacement; ?></h2>
                     <i class="fas fa-tools card-icon"></i>
                 </div>
             </div>
         </div>
 
-        <!-- MAGKATABI: GRAPH AT CALENDAR -->
         <div class="row g-4">
-            <!-- PIE GRAPH -->
-            <div class="col-lg-6">
-                <div class="calendar-card">
-                    <h5 class="fw-800 mb-4" style="color: #2E073F;">Asset Distribution</h5>
-                    <div style="height: 350px; width: 100%; display: flex; justify-content: center; align-items: center;">
-                        <canvas id="assetChart"></canvas>
+            <div class="col-lg-5">
+                <div class="chart-card">
+                    <h5 class="fw-bold mb-4" style="color: #2E073F;">Asset Distribution</h5>
+                    <div style="height: 350px;">
+                        <canvas id="assetPieChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- CALENDAR -->
-            <div class="col-lg-6">
-                <div class="calendar-card">
-                    <h5 class="fw-800 mb-4" style="color: #2E073F;">Inventory Calendar</h5>
-                    <div class="table-responsive">
-                        <table class="table table-borderless text-center align-middle calendar-table">
-                            <thead>
-                                <tr style="color: #2E073F; font-weight: 700; font-size: 0.75rem;">
-                                    <th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th><th>SAT</th><th>SUN</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <?php
-                                    $today = date('j'); 
-                                    $daysInMonth = date('t'); 
-                                    $firstDayOfMonth = date('N', strtotime(date('Y-m-01'))); 
-
-                                    for ($i = 1; $i < $firstDayOfMonth; $i++) {
-                                        echo "<td></td>";
-                                    }
-
-                                    for ($day = 1; $day <= $daysInMonth; $day++) {
-                                        $spanClass = ($day == $today) ? 'class="current-day"' : 'style="font-weight: 700; color: #2b3674;"';
-                                        echo "<td><span $spanClass>$day</span></td>";
-
-                                        if (($day + $firstDayOfMonth - 1) % 7 == 0) {
-                                            echo "</tr><tr>";
-                                        }
-                                    }
-                                    ?>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="col-lg-7">
+                <div class="chart-card">
+                    <h5 class="fw-bold mb-4" style="color: #2E073F;">Asset Analytics Overview</h5>
+                    <div style="height: 350px;">
+                        <canvas id="assetBarChart"></canvas>
                     </div>
                 </div>
             </div>
-        </div> <!-- End Row -->
+        </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- PIE CHART SCRIPT -->
 <script>
-    const ctx = document.getElementById('assetChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'pie',
+    // 1. PIE CHART CONFIG
+    const pieCtx = document.getElementById('assetPieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'doughnut', // Doughnut para mas modern tingnan kaysa sa regular pie
         data: {
             labels: ['In Use', 'For Disposal', 'Replacement'],
             datasets: [{
                 data: [<?php echo "$count_in_use, $count_disposal, $count_replacement"; ?>],
                 backgroundColor: ['#AD49E1', '#7A1CAC', '#2E073F'],
-                borderWidth: 2,
+                borderWidth: 5,
                 borderColor: '#ffffff',
                 hoverOffset: 15
             }]
@@ -299,24 +246,38 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        color: '#2E073F',
-                        font: { size: 12, weight: '700', family: 'Plus Jakarta Sans' },
-                        padding: 20,
-                        usePointStyle: true
-                    }
+                legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true, font: { weight: '600' } } }
+            }
+        }
+    });
+
+    // 2. BAR CHART CONFIG (The New Graph)
+    const barCtx = document.getElementById('assetBarChart').getContext('2d');
+    new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: ['In Use', 'For Disposal', 'Replacement'],
+            datasets: [{
+                label: 'Total Units',
+                data: [<?php echo "$count_in_use, $count_disposal, $count_replacement"; ?>],
+                backgroundColor: ['#AD49E1', '#7A1CAC', '#2E073F'],
+                borderRadius: 10, // Rounded bars
+                barThickness: 60
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false } // Hidden label sa taas para malinis
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }
                 },
-                tooltip: {
-                    backgroundColor: '#2E073F',
-                    padding: 12,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return ' ' + context.label + ': ' + context.raw + ' units';
-                        }
-                    }
+                x: {
+                    grid: { display: false }
                 }
             }
         }
