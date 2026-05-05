@@ -58,7 +58,6 @@ $current_page = 'view_area.php';
             min-height: 100vh;
         }
 
-        /* Modern Glass Header */
         .glass-header {
             background: white;
             border-radius: 25px;
@@ -71,7 +70,6 @@ $current_page = 'view_area.php';
             border: 1px solid rgba(255,255,255,0.7);
         }
 
-        /* Stat Card Modern */
         .stat-card-modern {
             background: white;
             border-radius: 24px;
@@ -83,6 +81,7 @@ $current_page = 'view_area.php';
             box-shadow: 0 10px 25px rgba(111, 66, 193, 0.03);
             border: 1px solid #f1f0f7;
         }
+
         .icon-box {
             width: 56px; height: 56px; border-radius: 18px;
             display: flex; align-items: center; justify-content: center;
@@ -91,7 +90,6 @@ $current_page = 'view_area.php';
             box-shadow: 0 8px 15px rgba(111, 66, 193, 0.2);
         }
 
-        /* Modern Table Card */
         .table-card {
             background: white;
             border-radius: 30px;
@@ -111,40 +109,23 @@ $current_page = 'view_area.php';
             transition: all 0.3s ease;
         }
 
-        .btn-purple {
-            background: var(--main-gradient);
-            border: none; 
-            color: white;
-        }
-
-        .filter-dropdown .dropdown-item {
-            padding: 10px 15px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .filter-dropdown .dropdown-item.active {
-            background: var(--main-gradient) !important;
-            color: white !important;
         .search-bar:focus {
             border-color: var(--accent-purple);
             box-shadow: 0 0 0 4px rgba(111, 66, 193, 0.1);
             outline: none;
         }
 
-        .filter-dropdown .dropdown-header {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            font-weight: 800;
-            color: #adb5bd;
-            padding: 10px 15px 5px;
+        .btn-action-main {
+            border-radius: 15px; padding: 12px 24px; font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        .btn-action-main:hover { transform: translateY(-3px); }
 
-        .filter-dropdown .dropdown-divider {
-            margin: 8px 0;
-            border-top: 1px solid #f1f1f1;
+        .btn-purple {
+            background: var(--main-gradient);
+            border: none; color: white;
         }
+        .btn-purple:hover { color: white; box-shadow: 0 8px 20px rgba(111, 66, 193, 0.3); }
 
         .custom-table thead th {
             color: #6f42c1; font-size: 0.75rem; text-transform: uppercase;
@@ -167,18 +148,6 @@ $current_page = 'view_area.php';
             box-shadow: 0 5px 15px rgba(111, 66, 193, 0.2);
         }
 
-        .btn-action-main {
-            border-radius: 15px; padding: 12px 24px; font-weight: 700;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .btn-action-main:hover { transform: translateY(-3px); }
-
-        .btn-purple {
-            background: var(--main-gradient);
-            border: none; color: white;
-        }
-        .btn-purple:hover { color: white; box-shadow: 0 8px 20px rgba(111, 66, 193, 0.3); }
-
         @media (max-width: 992px) { .content-wrapper { margin-left: 0; padding: 1.5rem; } }
     </style>
 </head>
@@ -194,10 +163,10 @@ $current_page = 'view_area.php';
             </div>
             <div class="d-flex align-items-center gap-3">
                 <div class="text-end d-none d-md-block">
-                    <div class="small fw-800" style="color: var(--accent-purple);"><?php echo $_SESSION['user']; ?></div>
+                    <div class="small fw-800" style="color: var(--accent-purple);"><?php echo $_SESSION['user'] ?? 'User'; ?></div>
                     <a href="logout.php" class="text-decoration-none fw-800" style="font-size: 0.7rem; color: var(--accent-pink);">SIGN OUT</a>
                 </div>
-                <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'], 0, 1)); ?></div>
+                <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'] ?? 'U', 0, 1)); ?></div>
             </div>
         </div>
 
@@ -209,7 +178,6 @@ $current_page = 'view_area.php';
                     <h2 class="m-0 fw-800" style="color: #1e293b;"><?php echo $active; ?></h2>
                 </div>
             </div>
-            <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'] ?? 'A', 0, 1)); ?></div>
         </div>
 
         <div class="table-card">
@@ -223,7 +191,6 @@ $current_page = 'view_area.php';
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
 
-                    <!-- SINGLE BUTTON FILTER DROPDOWN -->
                     <div class="dropdown filter-dropdown">
                         <button class="btn btn-action-main dropdown-toggle border bg-white shadow-sm" type="button" id="filterDropdown" data-bs-toggle="dropdown" style="border-radius: 20px;">
                             <i class="fas fa-filter me-2" style="color: #0d6efd;"></i> 
@@ -235,9 +202,7 @@ $current_page = 'view_area.php';
                             <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Active', this, 'Active')">Active</a></li>
                             <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Replacement', this, 'Replacement')">Replacement</a></li>
                             <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('For Disposal', this, 'For Disposal')">For Disposal</a></li>
-                            
                             <li><hr class="dropdown-divider"></li>
-                            
                             <li><h6 class="dropdown-header">By Type</h6></li>
                             <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Laptop', this, 'Laptops')">Laptops</a></li>
                             <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Desktop', this, 'Desktops')">Desktops</a></li>
@@ -245,8 +210,6 @@ $current_page = 'view_area.php';
                         </ul>
                     </div>
 
-                    <button type="button" class="btn btn-purple btn-action-main text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#deployAssetModal">
-                        <i class="fas fa-plus me-2"></i> New Asset
                     <button type="button" class="btn btn-purple btn-action-main shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#deployAssetModal">
                         <i class="fas fa-plus me-2"></i>New Asset
                     </button>
@@ -261,7 +224,7 @@ $current_page = 'view_area.php';
                             <th>Asset Tag</th>
                             <th>Device Details</th>
                             <th>Type</th>
-                            <th>Location/Status</th>
+                            <th>Location</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -270,20 +233,13 @@ $current_page = 'view_area.php';
                         <tr class="asset-row" 
                             data-type="<?php echo $row['asset_type'] ?? 'N/A'; ?>" 
                             data-status="<?php echo $row['status'] ?? 'N/A'; ?>">
-                            <td class="fw-800"><?php echo $row['asset_tag']; ?></td>
-                        <tr>
                             <td class="text-muted fw-600"><?php echo date("M d, Y", strtotime($row['created_at'] ?? 'now')); ?></td>
                             <td class="fw-800 text-dark"><?php echo $row['asset_tag']; ?></td>
                             <td>
                                 <div class="fw-800" style="color: #4338ca;"><?php echo $row['brand_model']; ?></div>
                                 <div class="text-muted small fw-600" style="font-size: 0.75rem;"><?php echo $row['serial_number']; ?></div>
                             </td>
-                            <td><span class="fw-600 text-muted"><?php echo $row['asset_type'] ?? 'N/A'; ?></span></td>
-                            <td>
-                                <span class="badge bg-light text-primary border rounded-pill px-3"><?php echo $row['location']; ?></span>
-                                <span class="d-none status-cell"><?php echo $row['status']; ?></span>
-                            </td>
-                            <td><span class="text-muted fw-700"><?php echo $row['type'] ?? 'N/A'; ?></span></td>
+                            <td><span class="fw-700 text-muted"><?php echo $row['asset_type'] ?? 'N/A'; ?></span></td>
                             <td><span class="badge-location"><?php echo $row['location']; ?></span></td>
                             <td class="text-center">
                                 <button class="btn btn-outline-dark btn-sm rounded-pill px-4 fw-800" style="font-size: 0.75rem;">PULLOUT</button>
@@ -296,6 +252,8 @@ $current_page = 'view_area.php';
                         <?php endif; ?>
                     </tbody>
                 </table>
+                <!-- Row para sa "No Results" search -->
+                <div id="noResults" style="display:none;" class="text-center py-5 text-muted fw-700">No matching assets found.</div>
             </div>
         </div>
     </div>
@@ -353,7 +311,7 @@ $current_page = 'view_area.php';
         function applyFilters() {
             let search = document.getElementById('assetSearch').value.toLowerCase();
             let rows = document.querySelectorAll('.asset-row');
-            let found = false;
+            let foundCount = 0;
 
             rows.forEach(row => {
                 let text = row.innerText.toLowerCase();
@@ -362,23 +320,16 @@ $current_page = 'view_area.php';
                 
                 let matchesSearch = text.includes(search);
                 let matchesFilter = (currentFilterValue === 'All' || type === currentFilterValue || status === currentFilterValue);
-        // --- SEARCH BAR LOGIC ---
-        document.getElementById('assetSearch').addEventListener('keyup', function() {
-            let filter = this.value.toLowerCase();
-            let rows = document.querySelectorAll('#assetTable tbody tr');
 
-            rows.forEach(row => {
-                // Laktawan ang 'no-data' row kung mayroon man
-                if (row.classList.contains('no-data')) return;
-
-                let text = row.innerText.toLowerCase();
-                if (text.includes(filter)) {
+                if (matchesSearch && matchesFilter) {
                     row.style.display = "";
+                    foundCount++;
                 } else {
                     row.style.display = "none";
                 }
             });
-            document.getElementById('noResultsRow').style.display = found ? "none" : "";
+
+            document.getElementById('noResults').style.display = (foundCount === 0 && rows.length > 0) ? "block" : "none";
         }
 
         function setFilter(filterVal, element, label) {
@@ -390,7 +341,6 @@ $current_page = 'view_area.php';
         }
 
         document.getElementById('assetSearch').addEventListener('keyup', applyFilters);
-        });
 
         // --- SCANNER LOGIC ---
         let html5QrCode;
