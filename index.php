@@ -1,31 +1,31 @@
 <?php
-session_start();
-include 'config.php';
+    session_start();
+    include 'config.php';
 
-if (!$conn) {
+    if (! $conn) {
     die("<div style='color:red; padding:20px;'>Master, mali ang database settings mo: " . mysqli_connect_error() . "</div>");
-}
+    }
 
-if (!isset($_SESSION['user_id'])) {
+    if (! isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
-}
+    }
 
-$user_id = $_SESSION['user_id'];
-$query = "SELECT fullname FROM users WHERE id = '$user_id'";
-$result = mysqli_query($conn, $query);
+    $user_id = $_SESSION['user_id'];
+    $query   = "SELECT fullname FROM users WHERE id = '$user_id'";
+    $result  = mysqli_query($conn, $query);
 
-if ($result && mysqli_num_rows($result) > 0) {
-    $user_data = mysqli_fetch_assoc($result);
+    if ($result && mysqli_num_rows($result) > 0) {
+    $user_data    = mysqli_fetch_assoc($result);
     $display_name = $user_data['fullname'];
-} else {
-    $display_name = "User"; 
-}
+    } else {
+    $display_name = "User";
+    }
 
-// --- ASSET TRACKING LOGIC ---
-$count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
-$count_disposal = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
-$count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
+    // --- ASSET TRACKING LOGIC ---
+    $count_in_use      = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
+    $count_disposal    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
+    $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -38,17 +38,17 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <style>
-        :root { 
+        :root {
             --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --accent-purple: #8e44ad;
-            --bg-light: #f4f7fe; 
+            --bg-light: #f4f7fe;
             --sidebar-width: 260px;
         }
 
-        body { 
-            background-color: var(--bg-light); 
+        body {
+            background-color: var(--bg-light);
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: #362d36;
             margin: 0;
@@ -137,7 +137,7 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
 
         .status-card:hover { transform: translateY(-5px); }
         .card-icon { font-size: 3.5rem; opacity: 0.2; position: absolute; right: -10px; bottom: -10px; }
-        
+
         .bg-inuse { background: linear-gradient(135deg, #AD49E1 0%, #AD49E1 100%); }
         .bg-disposal { background: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%); }
         .bg-replacement { background: linear-gradient(135deg, #2E073F 0%, #2E073F 100%); }
@@ -159,8 +159,8 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
 <body>
 
 <?php include 'aside.php';
-$title="dfgdfg";
-$sub_title="Asset Record & Monitoring"; ?>
+    $title     = "dfgdfg";
+$sub_title = "Asset Record & Monitoring"; ?>
 
 
 
@@ -261,7 +261,7 @@ $sub_title="Asset Record & Monitoring"; ?>
                 legend: { display: false } // Hidden label sa taas para malinis
             },
             scales: {
-                y: { 
+                y: {
                     beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }
                 },
