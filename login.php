@@ -98,14 +98,6 @@ if (isset($_POST['login'])) {
                 </div>
                 <div class="card-body p-4">
                     <form method="POST"> 
-                        <!-- <div class="mb-3">
-                            <label class="form-label fw-semibold">Login As</label>
-                            <select name="role" class="form-select" required>
-                                <option value="" selected disabled>-- Select Role --</option>
-                                <option value="Administrator">Administrator</option>
-                                <option value="Technical Support">Technical Support</option>
-                            </select>
-                        </div> -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Email Address</label>
                             <input type="email" name="username" class="form-control" placeholder="name@example.com" required>
