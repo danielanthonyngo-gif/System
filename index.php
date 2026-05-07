@@ -18,7 +18,7 @@
     if ($result && mysqli_num_rows($result) > 0) {
     $user_data    = mysqli_fetch_assoc($result);
     $display_name = $user_data['fullname']; 
-    $display_name = explode(' ', trim($display_name))[0];
+   
     $emailname = $user_data['username'];    
    
     } else {

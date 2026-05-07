@@ -1,4 +1,9 @@
-    <div class="glass-header-container">
+<?php
+
+ $display_name = explode(' ', trim($display_name))[0];
+?>
+
+<div class="glass-header-container">
         <div class="header-title-section">
             <h2><?php echo $title; ?></h2>
             <p><?php echo $sub_title; ?></p>
