@@ -628,26 +628,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 { facingMode: "environment" }, // Use back camera
                 config,
                 (decodedText, decodedResult) => {
-                    // Success callback - put decoded text into search input
+
                     searchInput.value = decodedText;
 
-                    // Trigger search event
+
                     const event = new Event('input', { bubbles: true });
                     searchInput.dispatchEvent(event);
 
-                    // Optional: Auto submit the form
+
                     const form = searchInput.closest('form');
                     if (form) {
                         form.submit();
                     }
 
-                    // Stop scanning and close modal
+
                     if (html5QrCode && html5QrCode.isScanning) {
                         html5QrCode.stop();
                     }
                     qrScannerModal.hide();
 
-                    // Show success feedback
+
                     const resultsDiv = document.getElementById('qr-reader-results');
                     resultsDiv.innerHTML = '<div class="alert alert-success">✓ QR Code scanned: ' + decodedText + '</div>';
                     setTimeout(() => {
@@ -655,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 2000);
                 },
                 (errorMessage) => {
-                    // Error callback - optional, you can log or ignore
+
                     console.log(errorMessage);
                 }
             ).catch(err => {
@@ -665,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     });
 
-    // Stop scanning when modal is closed
+
     document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function() {
         if (html5QrCode && html5QrCode.isScanning) {
             html5QrCode.stop();
