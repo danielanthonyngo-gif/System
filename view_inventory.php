@@ -1,58 +1,102 @@
-<?php
+ <?php
     ob_start();
     session_start();
-    include 'config.php';
+    include 'config.php'; 
 
-    // --- 1. SESSION & USER CHECK ---
+     
     if (! isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
+        header("Location: login.php");
+        exit();
     }
 
+    
     $current_uid = $_SESSION['user_id'];
     $user_res    = mysqli_query($conn, "SELECT fullname, role FROM users WHERE id = '$current_uid'");
     $user_data   = mysqli_fetch_assoc($user_res);
-
+    
+    $_SESSION['fullname'] = $user_data['fullname']; // Add this for audit
+    
     $display_name = $user_data['fullname'] ?? "Angelo Vicente";
     $user_role    = $user_data['role'] ?? "OJT";
-
-    // --- 2. FILTER & SEARCH LOGIC ---
+ 
     $search        = $_GET['search'] ?? '';
     $filter_status = $_GET['status_filter'] ?? '';
     $filter_type   = $_GET['type_filter'] ?? '';
 
-    // --- 3. UPDATE ASSET LOGIC ---
+    
     if (isset($_POST['update_asset'])) {
-    $asset_id = mysqli_real_escape_string($conn, $_POST['asset_id']);
-    $tag      = mysqli_real_escape_string($conn, $_POST['asset_tag']);
-    $serial   = mysqli_real_escape_string($conn, $_POST['serial_number']);
-    $model    = mysqli_real_escape_string($conn, $_POST['brand_model']);
-    $location = mysqli_real_escape_string($conn, $_POST['location']);
-    $status   = mysqli_real_escape_string($conn, $_POST['status']);
-
-    $update_query = "UPDATE assets SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
-    mysqli_query($conn, $update_query);
-    header("Location: view_inventory.php?msg=success_update");
-    exit();
+        $asset_id = mysqli_real_escape_string($conn, $_POST['asset_id']);
+        $tag      = mysqli_real_escape_string($conn, $_POST['asset_tag']);
+        $serial   = mysqli_real_escape_string($conn, $_POST['serial_number']);
+        $model    = mysqli_real_escape_string($conn, $_POST['brand_model']);
+        $location = mysqli_real_escape_string($conn, $_POST['location']);
+        $status   = mysqli_real_escape_string($conn, $_POST['status']);
+        
+      
+        $old_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$asset_id'");
+        $old_data = mysqli_fetch_assoc($old_query);
+        
+        $update_query = "UPDATE assets SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
+        
+        if (mysqli_query($conn, $update_query)) {
+             
+            logAudit($conn, 'UPDATE_ASSET', 'asset', $asset_id, $old_data, [
+                'asset_tag' => $tag,
+                'serial_number' => $serial,
+                'brand_model' => $model,
+                'location' => $location,
+                'status' => $status
+            ]);
+            header("Location: view_inventory.php?msg=success_update");
+            exit();
+        }
     }
 
-    // --- 4. CREATE ASSET LOGIC ---
+   
     if (isset($_POST['save_asset'])) {
-    $serial    = mysqli_real_escape_string($conn, $_POST['serial_number']);
-    $model     = mysqli_real_escape_string($conn, $_POST['brand_model']);
-    $type      = mysqli_real_escape_string($conn, $_POST['type']);
-    $loc       = mysqli_real_escape_string($conn, $_POST['location']);
-    $date      = mysqli_real_escape_string($conn, $_POST['date']);
-    $status    = mysqli_real_escape_string($conn, $_POST['status']);
-    $asset_tag = ! empty($_POST['manual_tag']) ? mysqli_real_escape_string($conn, $_POST['manual_tag']) : "AST-" . strtoupper(substr($type, 0, 1)) . "-" . rand(1000, 9999);
+        $serial    = mysqli_real_escape_string($conn, $_POST['serial_number']);
+        $model     = mysqli_real_escape_string($conn, $_POST['brand_model']);
+        $type      = mysqli_real_escape_string($conn, $_POST['type']);
+        $loc       = mysqli_real_escape_string($conn, $_POST['location']);
+        $date      = mysqli_real_escape_string($conn, $_POST['date']);
+        $status    = mysqli_real_escape_string($conn, $_POST['status']);
+        $asset_tag = ! empty($_POST['manual_tag']) ? mysqli_real_escape_string($conn, $_POST['manual_tag']) : "AST-" . strtoupper(substr($type, 0, 1)) . "-" . rand(1000, 9999);
 
-    $insert = "INSERT INTO assets (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
-    mysqli_query($conn, $insert);
-    header("Location: view_inventory.php?msg=success_create");
-    exit();
+        $insert = "INSERT INTO assets (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
+        
+        if (mysqli_query($conn, $insert)) {
+            $new_asset_id = mysqli_insert_id($conn);
+          
+            logAudit($conn, 'ADD_ASSET', 'asset', $new_asset_id, null, [
+                'inventory_date' => $date,
+                'asset_tag' => $asset_tag,
+                'serial_number' => $serial,
+                'brand_model' => $model,
+                'asset_type' => $type,
+                'location' => $loc,
+                'status' => $status
+            ]);
+            header("Location: view_inventory.php?msg=success_create");
+            exit();
+        }
     }
 
-    // --- 5. COUNTERS ---
+     
+    if (isset($_GET['delete_id'])) {
+        $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
+        
+     
+        $delete_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$delete_id'");
+        $asset_data = mysqli_fetch_assoc($delete_query);
+        
+        if (mysqli_query($conn, "DELETE FROM assets WHERE id='$delete_id'")) {
+           
+            logAudit($conn, 'DELETE_ASSET', 'asset', $delete_id, $asset_data, null);
+            header("Location: view_inventory.php?msg=success_delete");
+            exit();
+        }
+    }
+ 
     $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
     $count_disposal    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
     $count_active      = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
