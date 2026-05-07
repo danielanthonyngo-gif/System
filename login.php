@@ -11,8 +11,9 @@ if (isset($_POST['login'])) {
     $selected_role = $_POST['role'];
 
     // Prepared statement para i-check ang user
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ? AND role = ? LIMIT 1");
-    $stmt->bind_param("ss", $username, $selected_role);
+    // $stmt = $conn->prepare("SELECT * FROM users WHERE username = ? AND role = ? LIMIT 1");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?  LIMIT 1");
+    $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
     $user = $result->fetch_assoc();
@@ -97,14 +98,14 @@ if (isset($_POST['login'])) {
                 </div>
                 <div class="card-body p-4">
                     <form method="POST"> 
-                        <div class="mb-3">
+                        <!-- <div class="mb-3">
                             <label class="form-label fw-semibold">Login As</label>
                             <select name="role" class="form-select" required>
                                 <option value="" selected disabled>-- Select Role --</option>
                                 <option value="Administrator">Administrator</option>
                                 <option value="Technical Support">Technical Support</option>
                             </select>
-                        </div>
+                        </div> -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Email Address</label>
                             <input type="email" name="username" class="form-control" placeholder="name@example.com" required>
