@@ -1,61 +1,61 @@
 <?php
-ob_start(); 
-session_start();
-include 'config.php'; 
+    ob_start();
+    session_start();
+    include 'config.php';
 
-// --- 1. SESSION & USER CHECK ---
-if (!isset($_SESSION['user_id'])) {
+    // --- 1. SESSION & USER CHECK ---
+    if (! isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
-}
+    }
 
-$current_uid = $_SESSION['user_id'];
-$user_res = mysqli_query($conn, "SELECT fullname, role FROM users WHERE id = '$current_uid'");
-$user_data = mysqli_fetch_assoc($user_res);
+    $current_uid = $_SESSION['user_id'];
+    $user_res    = mysqli_query($conn, "SELECT fullname, role FROM users WHERE id = '$current_uid'");
+    $user_data   = mysqli_fetch_assoc($user_res);
 
-$display_name = $user_data['fullname'] ?? "Angelo Vicente"; 
-$user_role = $user_data['role'] ?? "OJT"; 
+    $display_name = $user_data['fullname'] ?? "Angelo Vicente";
+    $user_role    = $user_data['role'] ?? "OJT";
 
-// --- 2. FILTER & SEARCH LOGIC ---
-$search = $_GET['search'] ?? '';
-$filter_status = $_GET['status_filter'] ?? '';
-$filter_type = $_GET['type_filter'] ?? '';
+    // --- 2. FILTER & SEARCH LOGIC ---
+    $search        = $_GET['search'] ?? '';
+    $filter_status = $_GET['status_filter'] ?? '';
+    $filter_type   = $_GET['type_filter'] ?? '';
 
-// --- 3. UPDATE ASSET LOGIC ---
-if (isset($_POST['update_asset'])) {
+    // --- 3. UPDATE ASSET LOGIC ---
+    if (isset($_POST['update_asset'])) {
     $asset_id = mysqli_real_escape_string($conn, $_POST['asset_id']);
-    $tag = mysqli_real_escape_string($conn, $_POST['asset_tag']);
-    $serial = mysqli_real_escape_string($conn, $_POST['serial_number']);
-    $model = mysqli_real_escape_string($conn, $_POST['brand_model']);
+    $tag      = mysqli_real_escape_string($conn, $_POST['asset_tag']);
+    $serial   = mysqli_real_escape_string($conn, $_POST['serial_number']);
+    $model    = mysqli_real_escape_string($conn, $_POST['brand_model']);
     $location = mysqli_real_escape_string($conn, $_POST['location']);
-    $status = mysqli_real_escape_string($conn, $_POST['status']);
-    
+    $status   = mysqli_real_escape_string($conn, $_POST['status']);
+
     $update_query = "UPDATE assets SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
     mysqli_query($conn, $update_query);
     header("Location: view_inventory.php?msg=success_update");
     exit();
-}
+    }
 
-// --- 4. CREATE ASSET LOGIC ---
-if (isset($_POST['save_asset'])) {
-    $serial = mysqli_real_escape_string($conn, $_POST['serial_number']);
-    $model = mysqli_real_escape_string($conn, $_POST['brand_model']);
-    $type = mysqli_real_escape_string($conn, $_POST['type']); 
-    $loc = mysqli_real_escape_string($conn, $_POST['location']);
-    $date = mysqli_real_escape_string($conn, $_POST['date']);
-    $status = mysqli_real_escape_string($conn, $_POST['status']);
-    $asset_tag = !empty($_POST['manual_tag']) ? mysqli_real_escape_string($conn, $_POST['manual_tag']) : "AST-" . strtoupper(substr($type, 0, 1)) . "-" . rand(1000, 9999);
+    // --- 4. CREATE ASSET LOGIC ---
+    if (isset($_POST['save_asset'])) {
+    $serial    = mysqli_real_escape_string($conn, $_POST['serial_number']);
+    $model     = mysqli_real_escape_string($conn, $_POST['brand_model']);
+    $type      = mysqli_real_escape_string($conn, $_POST['type']);
+    $loc       = mysqli_real_escape_string($conn, $_POST['location']);
+    $date      = mysqli_real_escape_string($conn, $_POST['date']);
+    $status    = mysqli_real_escape_string($conn, $_POST['status']);
+    $asset_tag = ! empty($_POST['manual_tag']) ? mysqli_real_escape_string($conn, $_POST['manual_tag']) : "AST-" . strtoupper(substr($type, 0, 1)) . "-" . rand(1000, 9999);
 
     $insert = "INSERT INTO assets (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
     mysqli_query($conn, $insert);
     header("Location: view_inventory.php?msg=success_create");
     exit();
-}
+    }
 
-// --- 5. COUNTERS ---
-$count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
-$count_disposal = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
-$count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
+    // --- 5. COUNTERS ---
+    $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
+    $count_disposal    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
+    $count_active      = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -67,20 +67,20 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    
+
     <style>
-          :root { 
+          :root {
             --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --accent-purple: #8e44ad;
-            --bg-light: #f4f7fe; 
+            --bg-light: #f4f7fe;
             --sidebar-width: 260px;
         }
-       body { 
-            background-color: var(--bg-light); 
+       body {
+            background-color: var(--bg-light);
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: #362d36;
             margin: 0;
@@ -90,14 +90,14 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
             margin-left: var(--sidebar-width);
             padding: 35px;
             min-height: 100vh;
-        } 
+        }
         /* Dashboard Header */
         /* .glass-header { background: white; border-radius: 20px; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 30px; } */
-        
+
         /* Metric Cards */
         .metric-card { background: white; border-radius: 18px; padding: 20px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
         .metric-val { font-size: 1.5rem; font-weight: 800; }
-        
+
         /* Data Panel */
         .data-panel { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
 
@@ -137,7 +137,7 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
             font-size: 0.9rem;
             margin-bottom: 2px;
         }
-        .filter-dropdown .dropdown-item:hover, 
+        .filter-dropdown .dropdown-item:hover,
         .filter-dropdown .dropdown-item.active {
             background-color: var(--inspiro-purple) !important;
             color: white !important;
@@ -154,7 +154,7 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
         .input-custom { border-radius: 12px; padding: 12px 15px; border: 1.5px solid #eee; background: #fafafa; font-weight: 600; font-size: 0.9rem; width: 100%; transition: 0.3s; }
         .input-custom:focus { border-color: var(--inspiro-purple); outline: none; background: #fff; }
         .form-label-custom { font-weight: 700; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; display: block; }
-    
+
 
          .glass-header-container {
             background: white;
@@ -224,8 +224,8 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
 <body>
 
 <?php include 'aside.php';
-$title="INVENTORY MANAGEMENT";
-$sub_title="Asset Tracking System"; ?>
+    $title     = "INVENTORY MANAGEMENT";
+$sub_title = "Asset Tracking System"; ?>
 
 <div class="content-wrapper">
     <!-- Header -->
@@ -260,24 +260,40 @@ $sub_title="Asset Tracking System"; ?>
             <div class="col-md-7">
                 <form method="GET" id="filterForm" class="d-flex gap-3">
                     <!-- Search bar -->
-                    <div class="position-relative flex-grow-1">
-                        <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                        <input type="text" name="search" class="form-control border-0 bg-light p-3 ps-5 rounded-4 shadow-sm" 
-                               placeholder="Search Tag, Model, or Serial..." value="<?php echo htmlspecialchars($search); ?>">
-                    </div>
-                    
+                   <div class="position-relative">
+    <input type="text" name="search" class="form-control border-0 bg-light p-3 ps-5 rounded-4 shadow-sm"
+           placeholder="Search Tag, Model, or Serial..." value="<?php echo htmlspecialchars($search); ?>">
+
+    <!-- QR Scan Button -->
+    <button type="button" class="btn btn-light position-absolute top-50 end-0 translate-middle-y me-2 rounded-circle d-flex align-items-center justify-content-center"
+            style="width: 38px; height: 38px; background: #f0f0f0; border: none; cursor: pointer;"
+            id="qrScanBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect>
+            <line x1="8" y1="9" x2="16" y2="9"></line>
+            <line x1="8" y1="13" x2="16" y2="13"></line>
+            <line x1="8" y1="17" x2="13" y2="17"></line>
+        </svg>
+    </button>
+</div>
+
                     <input type="hidden" name="status_filter" id="status_filter_input" value="<?php echo $filter_status; ?>">
                     <input type="hidden" name="type_filter" id="type_filter_input" value="<?php echo $filter_type; ?>">
 
                     <!-- IMAGE-STYLE PURPLE DROPDOWN -->
                     <div class="dropdown filter-dropdown">
                         <button class="btn btn-filter dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-filter text-primary"></i> 
-                            Filter:<?php 
-                                if(!empty($filter_status)) echo $filter_status;
-                                elseif(!empty($filter_type)) echo $filter_type;
-                                else echo "All"; 
-                            ?>
+                            <i class="fas fa-filter text-primary"></i>
+                            Filter:<?php
+                                       if (! empty($filter_status)) {
+                                           echo $filter_status;
+                                       } elseif (! empty($filter_type)) {
+                                           echo $filter_type;
+                                       } else {
+                                           echo "All";
+                                       }
+
+                                   ?>
                         </button>
                         <ul class="dropdown-menu">
                             <li><h6 class="dropdown-header">By Status</h6></li>
@@ -285,9 +301,9 @@ $sub_title="Asset Tracking System"; ?>
                             <li><a class="dropdown-item <?php echo $filter_status == 'Active' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Active')">Active</a></li>
                             <li><a class="dropdown-item <?php echo $filter_status == 'Replacement' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Replacement')">Replacement</a></li>
                             <li><a class="dropdown-item <?php echo $filter_status == 'For Disposal' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'For Disposal')">For Disposal</a></li>
-                            
+
                             <li><hr class="dropdown-divider"></li>
-                            
+
                             <li><h6 class="dropdown-header">By Type</h6></li>
                             <li><a class="dropdown-item <?php echo $filter_type == 'Laptop' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'Laptop')">Laptops</a></li>
                             <li><a class="dropdown-item <?php echo $filter_type == 'Desktop' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'Desktop')">Desktops</a></li>
@@ -326,20 +342,23 @@ $sub_title="Asset Tracking System"; ?>
                     </thead>
                     <tbody>
                         <?php
-                        $sql = "SELECT * FROM assets WHERE 1=1";
-                        if (!empty($filter_status)) { $f = mysqli_real_escape_string($conn, $filter_status); $sql .= " AND status = '$f'"; }
-                        if (!empty($filter_type)) { $t = mysqli_real_escape_string($conn, $filter_type); $sql .= " AND asset_type = '$t'"; }
-                        if (!empty($search)) { $s = mysqli_real_escape_string($conn, $search); $sql .= " AND (asset_tag LIKE '%$s%' OR brand_model LIKE '%$s%' OR serial_number LIKE '%$s%')"; }
-                        $sql .= " ORDER BY inventory_date DESC";
-                        $res = mysqli_query($conn, $sql);
-                        
-                        while ($row = mysqli_fetch_assoc($res)):
-                            $badge = ($row['status'] == 'For Disposal') ? 'st-disposal' : (($row['status'] == 'Replacement') ? 'st-replacement' : 'st-active');
+                            $sql = "SELECT * FROM assets WHERE 1=1";
+                            if (! empty($filter_status)) {$f  = mysqli_real_escape_string($conn, $filter_status);
+                                $sql                          .= " AND status = '$f'";}
+                            if (! empty($filter_type)) {$t  = mysqli_real_escape_string($conn, $filter_type);
+                                $sql                          .= " AND asset_type = '$t'";}
+                            if (! empty($search)) {$s  = mysqli_real_escape_string($conn, $search);
+                                $sql                          .= " AND (asset_tag LIKE '%$s%' OR brand_model LIKE '%$s%' OR serial_number LIKE '%$s%')";}
+                            $sql .= " ORDER BY inventory_date DESC";
+                            $res = mysqli_query($conn, $sql);
+
+                            while ($row = mysqli_fetch_assoc($res)):
+                                $badge  = ($row['status'] == 'For Disposal') ? 'st-disposal' : (($row['status'] == 'Replacement') ? 'st-replacement' : 'st-active');
                         ?>
                         <tr>
                             <td class="small fw-600"><?php echo date('M d, Y', strtotime($row['inventory_date'])); ?></td>
                             <td><span class="badge bg-light text-dark fw-bold border"><?php echo $row['asset_tag']; ?></span></td>
-                            <td><canvas class="table-qr" data-value="<?php echo "TAG: ".$row['asset_tag']." | SN: ".$row['serial_number']; ?>" style="width:45px; height:45px;"></canvas></td>
+                            <td><canvas class="table-qr" data-value="<?php echo "TAG: " . $row['asset_tag'] . " | SN: " . $row['serial_number']; ?>" style="width:45px; height:45px;"></canvas></td>
                             <td>
                                 <div class="fw-bold text-dark"><?php echo $row['brand_model']; ?></div>
                                 <div class="small text-muted">SN: <?php echo $row['serial_number']; ?></div>
@@ -349,7 +368,7 @@ $sub_title="Asset Tracking System"; ?>
 
                              <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
                                 <td class="no-export text-center">
-                                    <button class="btn btn-sm btn-outline-secondary border-0 editBtn" 
+                                    <button class="btn btn-sm btn-outline-secondary border-0 editBtn"
                                         data-id="<?php echo $row['id']; ?>"
                                         data-tag="<?php echo $row['asset_tag']; ?>"
                                         data-serial="<?php echo $row['serial_number']; ?>"
@@ -477,8 +496,29 @@ $sub_title="Asset Tracking System"; ?>
     </div>
 </div>
 
+<!-- QR Scanner Modal -->
+<div class="modal fade" id="qrScannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">Scan QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="qr-reader" style="width: 100%;"></div>
+                <div id="qr-reader-results" class="mt-3 text-center"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary rounded-4" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
     // 1. FILTER FUNCTION
@@ -560,6 +600,79 @@ $sub_title="Asset Tracking System"; ?>
     const urlParams = new URLSearchParams(window.location.search);
     if(urlParams.get('msg') === 'success_create') Swal.fire({ icon: 'success', title: 'Asset Added!', showConfirmButton: false, timer: 1500 });
     if(urlParams.get('msg') === 'success_update') Swal.fire({ icon: 'success', title: 'Record Updated!', showConfirmButton: false, timer: 1500 });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let html5QrCode = null;
+    const qrScanBtn = document.getElementById('qrScanBtn');
+    const qrScannerModal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+    const searchInput = document.querySelector('input[name="search"]');
+
+    qrScanBtn.addEventListener('click', function() {
+        qrScannerModal.show();
+
+        // Initialize scanner when modal is shown
+        setTimeout(() => {
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, // Use back camera
+                config,
+                (decodedText, decodedResult) => {
+                    // Success callback - put decoded text into search input
+                    searchInput.value = decodedText;
+
+                    // Trigger search event
+                    const event = new Event('input', { bubbles: true });
+                    searchInput.dispatchEvent(event);
+
+                    // Optional: Auto submit the form
+                    const form = searchInput.closest('form');
+                    if (form) {
+                        form.submit();
+                    }
+
+                    // Stop scanning and close modal
+                    if (html5QrCode && html5QrCode.isScanning) {
+                        html5QrCode.stop();
+                    }
+                    qrScannerModal.hide();
+
+                    // Show success feedback
+                    const resultsDiv = document.getElementById('qr-reader-results');
+                    resultsDiv.innerHTML = '<div class="alert alert-success">✓ QR Code scanned: ' + decodedText + '</div>';
+                    setTimeout(() => {
+                        resultsDiv.innerHTML = '';
+                    }, 2000);
+                },
+                (errorMessage) => {
+                    // Error callback - optional, you can log or ignore
+                    console.log(errorMessage);
+                }
+            ).catch(err => {
+                console.error("Failed to start scanner:", err);
+                document.getElementById('qr-reader-results').innerHTML = '<div class="alert alert-danger">Unable to access camera. Please check permissions.</div>';
+            });
+        }, 500);
+    });
+
+    // Stop scanning when modal is closed
+    document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop();
+        }
+        document.getElementById('qr-reader-results').innerHTML = '';
+    });
+});
 </script>
 </body>
 </html>
