@@ -13,6 +13,7 @@ if (isset($_SESSION['user_id'])) {
     $u_query = mysqli_query($conn, "SELECT fullname FROM users WHERE id = '$u_id' LIMIT 1");
     if ($u_row = mysqli_fetch_assoc($u_query)) {
         $loggedInUser = $u_row['fullname'];
+          $display_name = $loggedInUser;
     }
 }
 
@@ -152,8 +153,12 @@ $result = mysqli_query($conn, $query);
   <?php include 'aside.php'; ?>
 
     <div class="main-content">
+        <?php 
+            $title = "User Management";
+            $sub_title = "Configure system access and user roles";
+            include 'header.php'; ?>
         <!-- Header -->
-        <div class="glass-header-container">
+        <!-- <div class="glass-header-container">
             <div class="header-title-section">
                 <h2>User Management</h2>
                 <p>Configure system access and user roles</p>
@@ -168,7 +173,7 @@ $result = mysqli_query($conn, $query);
                     <?php echo strtoupper(substr($loggedInUser, 0, 1)); ?>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <div class="d-flex justify-content-between align-items-center mb-4 px-2">
             <h5 class="fw-800 m-0" style="color: #2E073F;">User Directory</h5>
