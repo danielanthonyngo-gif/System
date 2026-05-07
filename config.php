@@ -1,8 +1,8 @@
 <?php
-$host = "sql301.infinityfree.com";
-$user = "if0_41832308";
-$pass = "inspirorelia";
-$dbname ="if0_41832308_dbasset";
+$host = "localhost";
+$user = "root";
+$pass = "";
+$dbname ="dbasset";
 
 $conn = mysqli_connect($host,$user, $pass, $dbname );
 
