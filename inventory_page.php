@@ -2,21 +2,54 @@
 session_start();
 include 'config.php';
 
+// 1. AUTHENTICATION CHECK
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-$location = isset($_GET['location']) ? mysqli_real_escape_string($conn, $_GET['location']) : 'BDO';
+// 2. AJAX LOGIC
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+    
+    $action = $_POST['action'];
 
-// Stats Query
+    if ($action == 'add') {
+        $location = mysqli_real_escape_string($conn, $_POST['location']);
+        $tag    = mysqli_real_escape_string($conn, $_POST['asset_tag']);
+        $sn     = mysqli_real_escape_string($conn, $_POST['serial_number']);
+        $model  = mysqli_real_escape_string($conn, $_POST['brand_model']);
+        $type   = mysqli_real_escape_string($conn, $_POST['asset_type']);
+        $status = mysqli_real_escape_string($conn, $_POST['status']);
+
+        $query = "INSERT INTO assets (asset_tag, serial_number, brand_model, asset_type, status, location) 
+                  VALUES ('$tag', '$sn', '$model', '$type', '$status', '$location')";
+        
+        if (mysqli_query($conn, $query)) echo json_encode(['success' => true]);
+        else echo json_encode(['success' => false, 'message' => mysqli_error($conn)]);
+        exit();
+    }
+
+    if ($action == 'update') {
+        $id      = mysqli_real_escape_string($conn, $_POST['id']);
+        $model   = mysqli_real_escape_string($conn, $_POST['brand_model']);
+        $type    = mysqli_real_escape_string($conn, $_POST['asset_type']);
+        $status  = mysqli_real_escape_string($conn, $_POST['status']);
+        $new_loc = mysqli_real_escape_string($conn, $_POST['location']); 
+
+        $query = "UPDATE assets SET brand_model='$model', asset_type='$type', status='$status', location='$new_loc' WHERE id='$id'";
+        
+        if (mysqli_query($conn, $query)) echo json_encode(['success' => true]);
+        else echo json_encode(['success' => false, 'message' => mysqli_error($conn)]);
+        exit();
+    }
+}
+
+// 3. PAGE DATA
+$location = isset($_GET['location']) ? mysqli_real_escape_string($conn, $_GET['location']) : 'BDO';
 $active_query = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '$location' AND status = 'Active'");
 $active = mysqli_fetch_assoc($active_query)['t'] ?? 0;
-
-// Kunin ang listahan ng assets
-$assets = mysqli_query($conn, "SELECT * FROM assets WHERE location = '$location'");
-
-$current_page = 'view_area.php'; 
+$assets = mysqli_query($conn, "SELECT * FROM assets WHERE location = '$location' ORDER BY id DESC");
 ?>
 
 <!DOCTYPE html>
@@ -25,12 +58,12 @@ $current_page = 'view_area.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tracking | <?php echo htmlspecialchars($location); ?></title>
-    
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     
     <style>
         :root { 
@@ -38,117 +71,24 @@ $current_page = 'view_area.php';
             --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --sidebar-width: 260px;
             --accent-purple: #2E073F;
-            --accent-pink: #7A1CAC;
         }
-
-        body { 
-            background-color: var(--app-bg); 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            color: #2d3436;
-            margin: 0;
-        }
-        
-        .content-wrapper { 
-            margin-left: var(--sidebar-width); 
-            padding: 1.5rem; 
-            min-height: 100vh;
-            transition: all 0.3s ease;
-        }
-
-        /* Glass Header */
-        .glass-header {
-            background: white;
-            border-radius: 20px;
-            padding: 1.2rem 1.5rem;
-            box-shadow: 0 10px 30px rgba(111, 66, 193, 0.05);
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid rgba(255,255,255,0.7);
-        }
-
-        /* Stat Cards */
-        .stat-card-modern {
-            background: white;
-            border-radius: 20px;
-            padding: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            box-shadow: 0 10px 25px rgba(111, 66, 193, 0.03);
-            border: 1px solid #f1f0f7;
-            height: 100%;
-        }
-
-        .icon-box {
-            width: 48px; height: 48px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 1.1rem;
-            background: var(--main-gradient);
-        }
-
-        /* Table Card & Search */
-        .table-card {
-            background: white;
-            border-radius: 25px;
-            padding: 1.5rem;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.02);
-            border: 1px solid #f1f0f7;
-        }
-        
-        .search-container { position: relative; width: 100%; }
-        .search-bar {
-            padding: 12px 20px 12px 45px;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            background: #fcfaff;
-            width: 100%;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .search-bar:focus { outline: none; border-color: var(--accent-pink); box-shadow: 0 0 0 3px rgba(122, 28, 172, 0.1); }
-
-        .btn-action-main {
-            border-radius: 12px; padding: 10px 20px; font-weight: 700;
-            white-space: nowrap; transition: all 0.2s;
-        }
-        .btn-action-main:hover { transform: translateY(-2px); }
-
-        .btn-purple { background: var(--main-gradient); border: none; color: white; }
-        .btn-purple:hover { color: white; opacity: 0.9; }
-
-        /* Table Styling */
-        .custom-table thead th {
-            color: #6f42c1; font-size: 0.7rem; text-transform: uppercase;
-            letter-spacing: 1px; font-weight: 800; padding: 15px;
-            border-bottom: 2px solid #f1f0f7;
-        }
-        .custom-table tbody td { padding: 15px; border-bottom: 1px solid #f8f9fa; }
-
-        .badge-location {
-            background: #f5f3ff; color: #6f42c1; border-radius: 8px;
-            padding: 5px 10px; font-weight: 800; font-size: 0.65rem;
-            border: 1px solid rgba(111, 66, 193, 0.1);
-        }
-
-        .profile-dot {
-            width: 40px; height: 40px; background: var(--main-gradient); 
-            color: white; border-radius: 12px; display: flex;
-            align-items: center; justify-content: center; font-weight: 800;
-        }
-
-        /* Mobile Optimization */
-        @media (max-width: 992px) {
-            .content-wrapper { margin-left: 0; padding: 1rem; }
-            .glass-header { margin-top: 50px; } /* Space for mobile menu toggle */
-        }
-
-        @media (max-width: 576px) {
-            .header-title h4 { font-size: 1rem; }
-            .btn-action-main { width: 100%; justify-content: center; display: flex; }
-            .d-flex-mobile { flex-direction: column !important; }
-        }
+        body { background-color: var(--app-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #2d3436; margin: 0; }
+        .content-wrapper { margin-left: var(--sidebar-width); padding: 1.5rem; min-height: 100vh; transition: 0.3s; }
+        .glass-header { background: white; border-radius: 20px; padding: 1.2rem 2rem; box-shadow: 0 10px 30px rgba(111,66,193,0.05); margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .header-title h4 { font-weight: 800; color: var(--accent-purple); text-transform: uppercase; }
+        .stat-card-modern { background: white; border-radius: 20px; padding: 1.5rem; display: flex; align-items: center; gap: 1rem; border: 1px solid #f1f0f7; }
+        .icon-box { width: 50px; height: 50px; border-radius: 15px; background: var(--main-gradient); color: white; display: flex; align-items: center; justify-content: center; }
+        .table-card { background: white; border-radius: 25px; padding: 1.5rem; border: 1px solid #f1f0f7; }
+        .search-bar { padding: 12px 45px; border-radius: 12px; border: 1px solid #e2e8f0; background: #fcfaff; width: 100%; font-weight: 600; }
+        .btn-purple { background: var(--main-gradient); border: none; color: white; border-radius: 12px; padding: 10px 25px; font-weight: 700; }
+        .badge-status { padding: 6px 14px; border-radius: 10px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+        .status-active { background: #ecfdf5; color: #059669; }
+        .status-replacement { background: #fffbeb; color: #d97706; }
+        .status-disposal { background: #fef2f2; color: #dc2626; }
+        .status-pulledout { background: #f3f4f6; color: #4b5563; }
+        .modal-content { border-radius: 25px; border: none; }
+        .form-control, .form-select { border-radius: 10px; padding: 10px; }
+        @media (max-width: 992px) { .content-wrapper { margin-left: 0; } }
     </style>
 </head>
 <body>
@@ -156,243 +96,246 @@ $current_page = 'view_area.php';
     <?php include 'aside.php'; ?>
     
     <div class="content-wrapper">
-        <!-- Header -->
         <div class="glass-header">
             <div class="header-title">
-                <h4 class="fw-800 m-0"><?php echo htmlspecialchars($location); ?> <span style="color: var(--accent-pink);">INVENTORY</span></h4>
-                <small class="text-muted d-none d-sm-block fw-600">Inspiro Relia Inc. Asset Management</small>
+                <h4 class="m-0"><?php echo htmlspecialchars($location); ?> <span>INVENTORY</span></h4>
+                <small class="text-muted fw-600">Asset Management System</small>
             </div>
-            <div class="d-flex align-items-center gap-3">
-                <div class="text-end d-none d-md-block">
-                    <div class="small fw-800" style="color: var(--accent-purple);"><?php echo $_SESSION['user'] ?? 'User'; ?></div>
-                    <a href="logout.php" class="text-decoration-none fw-bold" style="font-size: 0.65rem; color: var(--accent-pink);">SIGN OUT</a>
-                </div>
-                <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'] ?? 'U', 0, 1)); ?></div>
+            <div class="user-profile-box text-end">
+                <div class="fw-700"><?php echo $_SESSION['user'] ?? 'Admin'; ?></div>
+                <a href="logout.php" class="text-danger fw-800 small text-decoration-none">SIGN OUT</a>
             </div>
         </div>
 
-        <!-- Stats -->
-        <div class="row g-3 mb-4">
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+        <div class="row mb-4">
+            <div class="col-md-3">
                 <div class="stat-card-modern">
                     <div class="icon-box"><i class="fas fa-desktop"></i></div>
                     <div>
-                        <small class="text-muted fw-800 text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.5px;">Active Assets</small>
-                        <h3 class="m-0 fw-800" style="color: #1e293b;"><?php echo $active; ?></h3>
+                        <small class="text-muted fw-800 text-uppercase" style="font-size: 0.65rem;">Active Assets</small>
+                        <h3 class="m-0 fw-800"><?php echo $active; ?></h3>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Main Card -->
         <div class="table-card">
-            <!-- Controls Area -->
             <div class="row g-3 mb-4 align-items-center">
-                <div class="col-12 col-xl-5">
-                    <div class="search-container">
+                <div class="col-md-5">
+                    <div class="position-relative">
                         <i class="fas fa-search position-absolute" style="left: 18px; top: 15px; color: #b4b6c4;"></i>
                         <input type="text" id="assetSearch" class="search-bar" placeholder="Search tag, serial, or model...">
                     </div>
                 </div>
-                <div class="col-12 col-xl-7">
-                    <div class="d-flex flex-wrap gap-2 justify-content-xl-end">
-                        <a href="view_area.php" class="btn btn-light border btn-action-main">
-                            <i class="fas fa-arrow-left me-2"></i>Back
-                        </a>
-
-                        <!-- Comprehensive Filter -->
-                        <div class="dropdown filter-dropdown">
-                            <button class="btn btn-white border dropdown-toggle btn-action-main shadow-sm" type="button" id="filterDropdown" data-bs-toggle="dropdown">
-                                <i class="fas fa-filter me-2 text-primary"></i> 
-                                Filter: <span id="activeFilterLabel" class="fw-800">All</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2" style="border-radius: 15px; min-width: 220px;">
-                                <li><h6 class="dropdown-header text-uppercase small fw-800 text-muted">By Status</h6></li>
-                                <li><a class="dropdown-item rounded-3 active" href="#" onclick="setFilter('All', this, 'All Status')">All Status</a></li>
-                                <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Active', this, 'Active')">Active</a></li>
-                                <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Replacement', this, 'Replacement')">Replacement</a></li>
-                                <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('For Disposal', this, 'For Disposal')">For Disposal</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><h6 class="dropdown-header text-uppercase small fw-800 text-muted">By Type</h6></li>
-                                <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Laptop', this, 'Laptops')">Laptops</a></li>
-                                <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Desktop', this, 'Desktops')">Desktops</a></li>
-                                <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Monitor', this, 'Monitors')">Monitors</a></li>
-                            </ul>
-                        </div>
-
-                        <button class="btn btn-purple btn-action-main shadow-sm" data-bs-toggle="modal" data-bs-target="#deployAssetModal">
-                            <i class="fas fa-plus me-2"></i>New Asset
-                        </button>
-                    </div>
+                <div class="col-md-7 text-end">
+                    <a href="view_area.php" class="btn btn-light border rounded-pill px-4 me-2 fw-700">Back</a>
+                    <button class="btn btn-purple shadow-sm" data-bs-toggle="modal" data-bs-target="#newAssetModal">
+                        <i class="fas fa-plus me-2"></i>New Asset
+                    </button>
                 </div>
             </div>
 
-            <!-- Asset Table -->
             <div class="table-responsive">
-                <table class="table custom-table align-middle" id="assetTable">
+                <table class="table align-middle">
                     <thead>
-                        <tr>
+                        <tr class="text-muted small fw-800 text-uppercase">
                             <th>Asset Tag</th>
+                            <th>QR</th>
                             <th>Device Details</th>
                             <th>Type</th>
-                            <th>Location</th>
+                            <th>Current Area</th>
+                            <th class="text-center">Status</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while($row = mysqli_fetch_assoc($assets)): ?>
-                        <tr class="asset-row" 
-                            data-type="<?php echo htmlspecialchars($row['asset_type'] ?? ''); ?>" 
-                            data-status="<?php echo htmlspecialchars($row['status'] ?? ''); ?>">
-                            <td class="fw-800 text-dark"><?php echo $row['asset_tag']; ?></td>
+                        <?php while($row = mysqli_fetch_assoc($assets)): 
+                            $qr_data = "TAG: ".$row['asset_tag']." | SN: ".$row['serial_number'];
+                        ?>
+                        <tr class="asset-row">
+                            <td class="fw-800"><?php echo $row['asset_tag']; ?></td>
                             <td>
-                                <div class="fw-800 text-primary" style="font-size: 0.9rem;"><?php echo $row['brand_model']; ?></div>
-                                <div class="text-muted small fw-600"><?php echo $row['serial_number']; ?></div>
+                                <button type="button" class="btn p-1 border rounded" onclick="viewQR('<?php echo $qr_data; ?>', '<?php echo $row['asset_tag']; ?>')">
+                                    <canvas class="table-qr" data-value="<?php echo $qr_data; ?>" style="width:30px; height:30px;"></canvas>
+                                </button>
                             </td>
-                            <td><span class="fw-700 text-muted"><?php echo $row['asset_type'] ?? 'N/A'; ?></span></td>
-                            <td><span class="badge-location"><?php echo $row['location']; ?></span></td>
+                            <td>
+                                <div class="fw-800 text-primary small"><?php echo $row['brand_model']; ?></div>
+                                <div class="text-muted smaller"><?php echo $row['serial_number']; ?></div>
+                            </td>
+                            <td class="fw-700 text-muted small"><?php echo $row['asset_type']; ?></td>
+                            <td><span class="badge bg-light text-dark border"><?php echo $row['location']; ?></span></td>
                             <td class="text-center">
-                                <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-800" style="font-size: 0.7rem;">PULLOUT</button>
+                                <?php 
+                                    $s = $row['status'];
+                                    $c = ($s=='Active')?'status-active':(($s=='Replacement')?'status-replacement':(($s=='For Disposal')?'status-disposal':'status-pulledout'));
+                                ?>
+                                <span class="badge-status <?php echo $c; ?>"><?php echo $s; ?></span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-dark rounded-pill px-3 edit-btn" 
+                                    data-id="<?php echo $row['id']; ?>"
+                                    data-tag="<?php echo $row['asset_tag']; ?>"
+                                    data-model="<?php echo $row['brand_model']; ?>"
+                                    data-status="<?php echo $row['status']; ?>"
+                                    data-type="<?php echo $row['asset_type']; ?>"
+                                    data-location="<?php echo $row['location']; ?>">Edit</button>
                             </td>
                         </tr>
                         <?php endwhile; ?>
-                        
-                        <?php if(mysqli_num_rows($assets) == 0): ?>
-                        <tr><td colspan="5" class="text-center py-5 text-muted fw-600">No assets found in this location.</td></tr>
-                        <?php endif; ?>
                     </tbody>
                 </table>
-                <div id="noResults" style="display:none;" class="text-center py-5 text-muted fw-700">No matching assets found.</div>
             </div>
         </div>
     </div>
 
-    <!-- Scanner Modal -->
-    <div class="modal fade" id="deployAssetModal" data-bs-backdrop="static" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
-                <div class="modal-header border-0 p-4 pb-0">
-                    <h5 class="modal-title fw-800"><i class="bi bi-qr-code-scan me-2 text-primary"></i>Deploy New Asset</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopScanner()"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <div id="reader" class="rounded-4 bg-light overflow-hidden" style="min-height: 250px; border: 2px dashed #d1d5db;">
-                                <div class="text-center p-5 text-muted" id="reader-placeholder">
-                                    <i class="bi bi-camera fs-1"></i><p class="mt-2 fw-800">Ready to Scan</p>
-                                </div>
+    <!-- EDIT MODAL (Updated Location Names) -->
+    <div class="modal fade" id="editAssetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="editAssetForm">
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="id" id="edit_id">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="fw-800 text-primary">Update Asset Location</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12"><label class="fw-700 small">Asset Tag</label><input type="text" id="edit_tag" class="form-control bg-light" readonly></div>
+                            <div class="col-12"><label class="fw-700 small">Brand & Model</label><input type="text" name="brand_model" id="edit_model" class="form-control" required></div>
+                            
+                            <div class="col-md-6">
+                                <label class="fw-700 small">Asset Type</label>
+                                <select name="asset_type" id="edit_type" class="form-select">
+                                    <option>Desktop</option><option>Laptop</option><option>Monitor</option><option>UPS</option><option>Printer</option>
+                                </select>
                             </div>
-                            <div class="mt-3 d-flex gap-2">
-                                <button type="button" class="btn btn-purple w-100 fw-800 py-2" onclick="toggleCamera()" id="btnPowerText">Start</button>
-                                <button type="button" class="btn btn-dark fw-800 py-2" onclick="switchCamera()"><i class="bi bi-arrow-repeat"></i></button>
+                            <div class="col-md-6">
+                                <label class="fw-700 small">Status</label>
+                                <select name="status" id="edit_status" class="form-select">
+                                    <option>Active</option><option>Replacement</option><option>For Disposal</option><option>In Storage</option>
+                                </select>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <form id="deployForm">
-                                <div class="mb-3">
-                                    <label class="form-label small fw-800 text-muted">ASSET TAG / SERIAL</label>
-                                    <input type="text" class="form-control bg-light fw-800 border-0 p-3 rounded-4" id="assetTag" readonly placeholder="Scan result...">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label small fw-800 text-muted">EQUIPMENT NAME</label>
-                                    <input type="text" class="form-control p-3 rounded-4 border-1" id="equipmentName" placeholder="e.g. Dell Latitude 3420">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label small fw-800 text-muted">LOCATION</label>
-                                    <input type="text" class="form-control bg-light p-3 border-0 rounded-4 fw-800 text-primary" value="<?php echo htmlspecialchars($location); ?>" readonly>
-                                </div>
-                            </form>
+
+                            <!-- DITO YUNG MGA NAMES MULA SA SCREENSHOT MO -->
+                            <div class="col-12">
+                                <label class="fw-700 small text-purple" style="color: #7A1CAC;">Transfer to New Area</label>
+                                <select name="location" id="edit_location" class="form-select border-primary" style="background-color: #fcfaff;">
+                                    <optgroup label="ALPHA BUILDING">
+                                        <option value="BDO">BDO</option>
+                                        <option value="BDO INSURE">BDO INSURE</option>
+                                        <option value="BDO LIFE">BDO LIFE</option>
+                                        <option value="PACSAN">PACSAN</option>
+                                        <option value="BDO CORE">BDO CORE</option>
+                                        <option value="FLIGHT CENTER">FLIGHT CENTER</option>
+                                        <option value="MANILA DOCTOR'S HOSPITAL">MANILA DOCTOR'S HOSPITAL</option>
+                                        <option value="IGNITE">IGNITE</option>
+                                        <option value="VIAGOGO">VIAGOGO</option>
+                                        <option value="ALPHA STORAGE">ALPHA STORAGE</option>
+                                    </optgroup>
+                                    <optgroup label="BETA BUILDING">
+                                        <option value="GRAB SUPPORT">GRAB SUPPORT</option>
+                                        <option value="GRAB COE">GRAB COE</option>
+                                        <option value="SHARK NINJA">SHARK NINJA</option>
+                                        <option value="HALLMARK">HALLMARK</option>
+                                        <option value="ANA">ANA</option>
+                                        <option value="AUB">AUB</option>
+                                        <option value="AUB">BETA STORAGE</option>
+                                    </optgroup>
+                                </select>
+                                <div class="mt-2 text-muted" style="font-size: 0.7rem;">*Kapag pinalitan, automatic na malilipat ang asset sa database area na napili.</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer border-0 p-4 pt-0">
-                    <button type="button" class="btn btn-light fw-800 px-4" data-bs-dismiss="modal" onclick="stopScanner()">Cancel</button>
-                    <button type="button" class="btn btn-purple fw-800 px-5 shadow">Confirm Deployment</button>
-                </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-purple px-4">Update Asset</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- NEW ASSET MODAL -->
+    <div class="modal fade" id="newAssetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="addAssetForm">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="location" value="<?php echo htmlspecialchars($location); ?>">
+                    <div class="modal-header border-0 pb-0"><h5 class="fw-800">New Registration</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body pt-2">
+                        <div class="row g-3">
+                            <div class="col-12"><label class="small fw-700">Tag</label><input type="text" name="asset_tag" class="form-control" required></div>
+                            <div class="col-12"><label class="small fw-700">Serial</label><input type="text" name="serial_number" class="form-control" required></div>
+                            <div class="col-12"><label class="small fw-700">Brand/Model</label><input type="text" name="brand_model" class="form-control" required></div>
+                            <div class="col-md-6"><label class="small fw-700">Type</label><select name="asset_type" class="form-select"><option>Desktop</option><option>Laptop</option><option>Monitor</option></select></div>
+                            <div class="col-md-6"><label class="small fw-700">Status</label><select name="status" class="form-select"><option>Active</option></select></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0"><button type="submit" class="btn btn-purple w-100">Save Asset</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
-        let currentFilterValue = 'All';
-
-        // Instant Filter Logic
-        function applyFilters() {
-            let search = document.getElementById('assetSearch').value.toLowerCase();
-            let rows = document.querySelectorAll('.asset-row');
-            let foundCount = 0;
-
-            rows.forEach(row => {
-                let type = row.getAttribute('data-type') || '';
-                let status = row.getAttribute('data-status') || '';
-                let rowText = row.innerText.toLowerCase();
-
-                let matchesSearch = rowText.includes(search);
-                let matchesFilter = (currentFilterValue === 'All' || 
-                                     type === currentFilterValue || 
-                                     status === currentFilterValue);
-
-                if (matchesSearch && matchesFilter) {
-                    row.style.display = "";
-                    foundCount++;
-                } else {
-                    row.style.display = "none";
-                }
+        function viewQR(data, tag) {
+            Swal.fire({
+                title: `QR: ${tag}`,
+                html: `<div class="p-3 bg-white d-inline-block border rounded"><canvas id="popup_qr"></canvas></div>`,
+                didOpen: () => { new QRious({ element: document.getElementById('popup_qr'), value: data, size: 200 }); }
             });
-
-            document.getElementById('noResults').style.display = (foundCount === 0 && rows.length > 0) ? "block" : "none";
         }
 
-        function setFilter(filterVal, element, label) {
-            document.querySelectorAll('.filter-dropdown .dropdown-item').forEach(i => i.classList.remove('active'));
-            element.classList.add('active');
-            document.getElementById('activeFilterLabel').innerText = label;
-            currentFilterValue = filterVal;
-            applyFilters();
+        function initTableQRs() {
+            document.querySelectorAll('.table-qr').forEach(canvas => {
+                new QRious({ element: canvas, value: canvas.getAttribute('data-value'), size: 80 });
+            });
         }
+        window.onload = initTableQRs;
 
-        document.getElementById('assetSearch').addEventListener('keyup', applyFilters);
+        document.getElementById('assetSearch').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            document.querySelectorAll('.asset-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        });
 
-        // Scanner Logic
-        let html5QrCode;
-        let isScanning = false;
-        let currentFacingMode = "environment";
-
-        async function toggleCamera() {
-            if (!isScanning) {
-                if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                try {
-                    document.getElementById("reader-placeholder").classList.add('d-none');
-                    await html5QrCode.start({ facingMode: currentFacingMode }, { fps: 10, qrbox: 250 }, (text) => {
-                        document.getElementById('assetTag').value = text;
-                        if (navigator.vibrate) navigator.vibrate(100);
-                        stopScanner();
-                    });
-                    isScanning = true;
-                    document.getElementById("btnPowerText").innerText = "Stop";
-                } catch (err) { alert("Camera Error: " + err); }
-            } else { stopScanner(); }
-        }
-
-        async function stopScanner() {
-            if (html5QrCode && isScanning) {
-                await html5QrCode.stop();
-                isScanning = false;
-                document.getElementById("btnPowerText").innerText = "Start";
-                document.getElementById("reader-placeholder").classList.remove('d-none');
+        // Click Edit Button
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('edit-btn')) {
+                const btn = e.target;
+                document.getElementById('edit_id').value = btn.dataset.id;
+                document.getElementById('edit_tag').value = btn.dataset.tag;
+                document.getElementById('edit_model').value = btn.dataset.model;
+                document.getElementById('edit_status').value = btn.dataset.status;
+                document.getElementById('edit_type').value = btn.dataset.type;
+                document.getElementById('edit_location').value = btn.dataset.location; 
+                
+                new bootstrap.Modal(document.getElementById('editAssetModal')).show();
             }
-        }
+        });
 
-        async function switchCamera() {
-            currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-            if (isScanning) { await stopScanner(); toggleCamera(); }
-        }
+        // Submit Update
+        document.getElementById('editAssetForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch(window.location.href, { method: 'POST', body: new FormData(this) })
+            .then(res => res.json()).then(data => { 
+                if(data.success) {
+                    Swal.fire({icon:'success', title:'Asset Moved/Updated', showConfirmButton:false, timer:1000}).then(() => location.reload());
+                } else { alert(data.message); }
+            });
+        });
+
+        // Submit New
+        document.getElementById('addAssetForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch(window.location.href, { method: 'POST', body: new FormData(this) })
+            .then(res => res.json()).then(data => { if(data.success) location.reload(); });
+        });
     </script>
 </body>
 </html>
-
-s

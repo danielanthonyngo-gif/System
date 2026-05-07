@@ -3,11 +3,14 @@ session_start();
 include 'config.php';
 
 $display_name = "Guest"; 
+$user_role = ""; 
+
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
-    $user_query = mysqli_query($conn, "SELECT fullname FROM users WHERE id = '$user_id' LIMIT 1");
+    $user_query = mysqli_query($conn, "SELECT fullname, role FROM users WHERE id = '$user_id' LIMIT 1");
     if ($row = mysqli_fetch_assoc($user_query)) {
         $display_name = $row['fullname'];
+        $user_role = $row['role']; 
     }
 }
 
@@ -27,7 +30,7 @@ if (!isset($_SESSION['beta_list'])) {
 }
 
 // --- ADD LOGIC ---
-if (isset($_POST['add_area'])) {
+if (isset($_POST['add_area']) && $user_role === 'Administrator') {
     $new_name = $_POST['area_name'];
     $building = $_POST['building_type'];
     if (!empty($new_name)) {
@@ -38,8 +41,38 @@ if (isset($_POST['add_area'])) {
     }
 }
 
+// --- CHANGE LOCATION LOGIC (BAGO) ---
+if (isset($_POST['change_location']) && $user_role === 'Administrator') {
+    $target_name = $_POST['target_area'];
+    $new_building = $_POST['new_building'];
+    $current_type = $_POST['current_type'];
+
+    // Kung lilipat mula Alpha patungong Beta
+    if ($current_type == 'alpha' && $new_building == 'Beta') {
+        foreach($_SESSION['alpha_list'] as $k => $v) {
+            if($v['name'] == $target_name) {
+                $_SESSION['beta_list'][] = ['name' => $target_name];
+                unset($_SESSION['alpha_list'][$k]);
+            }
+        }
+        $_SESSION['alpha_list'] = array_values($_SESSION['alpha_list']);
+    } 
+    // Kung lilipat mula Beta patungong Alpha
+    elseif ($current_type == 'beta' && $new_building == 'Alpha') {
+        foreach($_SESSION['beta_list'] as $k => $v) {
+            if($v['name'] == $target_name) {
+                $_SESSION['alpha_list'][] = ['name' => $target_name];
+                unset($_SESSION['beta_list'][$k]);
+            }
+        }
+        $_SESSION['beta_list'] = array_values($_SESSION['beta_list']);
+    }
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
 // --- DELETE LOGIC ---
-if (isset($_GET['del'])) {
+if (isset($_GET['del']) && $user_role === 'Administrator') {
     $target = $_GET['del'];
     $type = $_GET['type'];
     if ($type == 'alpha') {
@@ -86,12 +119,17 @@ if (isset($_GET['del'])) {
         }
         .area-card:hover { transform: translateY(-10px); }
         
-        .delete-overlay {
-            position: absolute; top: 10px; right: 10px; background: rgba(255, 0, 0, 0.1); color: #ff4757;
-            border: none; width: 25px; height: 25px; border-radius: 8px; font-size: 0.7rem;
-            display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; z-index: 5;
+        /* Updated overlay for two buttons */
+        .action-overlay {
+            position: absolute; top: 10px; right: 10px; display: flex; gap: 5px; opacity: 0; transition: 0.3s; z-index: 5;
         }
-        .area-card:hover .delete-overlay { opacity: 1; }
+        .area-card:hover .action-overlay { opacity: 1; }
+
+        .btn-action { width: 25px; height: 25px; border-radius: 8px; font-size: 0.7rem; border: none; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: 0.2s; }
+        .btn-del { background: rgba(255, 0, 0, 0.1); color: #ff4757; }
+        .btn-del:hover { background: #ff4757; color: white; }
+        .btn-move { background: rgba(122, 28, 172, 0.1); color: #7A1CAC; }
+        .btn-move:hover { background: #7A1CAC; color: white; }
 
         .card-header-label { background: #fcfaff; padding: 15px; font-size: 0.75rem; font-weight: 800; color: #3b1845; text-transform: uppercase; border-bottom: 1px solid #f1f0f7; }
         .pc-icon-wrapper { padding: 25px 0; font-size: 2.5rem; background: var(--main-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -110,6 +148,7 @@ if (isset($_GET['del'])) {
 <?php include 'aside.php'; ?>
 
 <div class="content">
+    <!-- Header -->
     <div class="glass-header-container">
         <div>
             <h2 style="color: var(--accent-purple); font-weight: 700; margin: 0;">VIEW AREAS</h2>
@@ -126,14 +165,15 @@ if (isset($_GET['del'])) {
         </div>
     </div>
 
-    <!-- BUTTON ALIGNED TO THE RIGHT -->
     <div class="d-flex justify-content-end mb-4">
-        <button class="btn-add-area" data-bs-toggle="modal" data-bs-target="#addModal">
-            <i class="fas fa-plus-circle me-2"></i> ADD NEW AREA
-        </button>
+        <?php if ($user_role === 'Administrator'): ?>
+            <button class="btn-add-area" data-bs-toggle="modal" data-bs-target="#addModal">
+                <i class="fas fa-plus-circle me-2"></i> ADD NEW AREA
+            </button>
+        <?php endif; ?>
     </div>
 
-    <!-- ALPHA -->
+    <!-- Alpha Section -->
     <div class="section-title">ALPHA BUILDING & OTHERS</div>
     <div class="row g-4 mb-5">
         <?php foreach($_SESSION['alpha_list'] as $area): 
@@ -143,7 +183,13 @@ if (isset($_GET['del'])) {
         ?>
         <div class="col-xl-2 col-lg-3 col-md-4 col-6">
             <div class="area-card text-center">
-                <a href="?del=<?php echo urlencode($name); ?>&type=alpha" class="delete-overlay" onclick="return confirm('Delete area?')"><i class="fas fa-times"></i></a>
+                <?php if ($user_role === 'Administrator'): ?>
+                    <div class="action-overlay">
+                        <button class="btn-action btn-move" onclick="openMoveModal('<?php echo addslashes($name); ?>', 'alpha')" title="Move Location"><i class="fas fa-exchange-alt"></i></button>
+                        <a href="?del=<?php echo urlencode($name); ?>&type=alpha" class="btn-action btn-del" onclick="return confirm('Delete area?')"><i class="fas fa-times"></i></a>
+                    </div>
+                <?php endif; ?>
+
                 <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
                     <div class="card-header-label"><?php echo $name; ?></div>
                     <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
@@ -157,7 +203,7 @@ if (isset($_GET['del'])) {
         <?php endforeach; ?>
     </div>
 
-    <!-- BETA -->
+    <!-- Beta Section -->
     <div class="section-title">BETA BUILDING</div>
     <div class="row g-4 mb-4">
         <?php foreach($_SESSION['beta_list'] as $area): 
@@ -167,7 +213,13 @@ if (isset($_GET['del'])) {
         ?>
         <div class="col-xl-2 col-lg-3 col-md-4 col-6">
             <div class="area-card text-center">
-                <a href="?del=<?php echo urlencode($name); ?>&type=beta" class="delete-overlay" onclick="return confirm('Delete area?')"><i class="fas fa-times"></i></a>
+                <?php if ($user_role === 'Administrator'): ?>
+                    <div class="action-overlay">
+                        <button class="btn-action btn-move" onclick="openMoveModal('<?php echo addslashes($name); ?>', 'beta')" title="Move Location"><i class="fas fa-exchange-alt"></i></button>
+                        <a href="?del=<?php echo urlencode($name); ?>&type=beta" class="btn-action btn-del" onclick="return confirm('Delete area?')"><i class="fas fa-times"></i></a>
+                    </div>
+                <?php endif; ?>
+
                 <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
                     <div class="card-header-label"><?php echo $name; ?></div>
                     <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
@@ -182,7 +234,36 @@ if (isset($_GET['del'])) {
     </div>
 </div>
 
-<!-- MODAL -->
+<!-- CHANGE LOCATION MODAL -->
+<div class="modal fade" id="moveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 25px;">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 style="color: #7A1CAC; font-weight: 800;">RELOCATE AREA</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <input type="hidden" name="target_area" id="move_target_area">
+                <input type="hidden" name="current_type" id="move_current_type">
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">You are moving: <b id="move_area_display" class="text-dark"></b></p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-700">Move to Building</label>
+                        <select name="new_building" class="form-select" style="border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0;">
+                            <option value="Alpha">Alpha Building & Others</option>
+                            <option value="Beta">Beta Building</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="submit" name="change_location" class="btn-add-area w-100">CONFIRM RELOCATION</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ADD MODAL (Original) -->
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 25px;">
@@ -213,5 +294,15 @@ if (isset($_GET['del'])) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Function para i-pass ang data sa Move Modal
+function openMoveModal(areaName, currentType) {
+    document.getElementById('move_target_area').value = areaName;
+    document.getElementById('move_current_type').value = currentType;
+    document.getElementById('move_area_display').innerText = areaName;
+    var moveModal = new bootstrap.Modal(document.getElementById('moveModal'));
+    moveModal.show();
+}
+</script>
 </body>
 </html>

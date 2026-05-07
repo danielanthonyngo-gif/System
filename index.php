@@ -26,6 +26,7 @@ if ($result && mysqli_num_rows($result) > 0) {
 $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
 $count_disposal = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
 $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
+$count_storage = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='In Storage'"))['total'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -141,6 +142,7 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
         .bg-inuse { background: linear-gradient(135deg, #AD49E1 0%, #AD49E1 100%); }
         .bg-disposal { background: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%); }
         .bg-replacement { background: linear-gradient(135deg, #2E073F 0%, #2E073F 100%); }
+        .bg-storage { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); }
 
         .chart-card {
             background: white;
@@ -180,25 +182,32 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
 
     <div class="container-fluid p-0">
         <div class="row g-4 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="status-card bg-inuse">
                     <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Use Assets</p>
                     <h2 class="display-6 fw-bold mb-0"><?php echo $count_in_use; ?></h2>
                     <i class="fas fa-desktop card-icon"></i>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="status-card bg-disposal">
                     <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">For Disposal</p>
                     <h2 class="display-6 fw-bold mb-0"><?php echo $count_disposal; ?></h2>
                     <i class="fas fa-dumpster card-icon"></i>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="status-card bg-replacement">
                     <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">Replacement</p>
                     <h2 class="display-6 fw-bold mb-0"><?php echo $count_replacement; ?></h2>
                     <i class="fas fa-tools card-icon"></i>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="status-card bg-storage">
+                    <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Storage</p>
+                    <h2 class="display-6 fw-bold mb-0"><?php echo $count_storage; ?></h2>
+                    <i class="fas fa-boxes-stacked card-icon"></i>
                 </div>
             </div>
         </div>
@@ -231,12 +240,12 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
     // 1. PIE CHART CONFIG
     const pieCtx = document.getElementById('assetPieChart').getContext('2d');
     new Chart(pieCtx, {
-        type: 'doughnut', // Doughnut para mas modern tingnan kaysa sa regular pie
+        type: 'doughnut',
         data: {
-            labels: ['In Use', 'For Disposal', 'Replacement'],
+            labels: ['In Use', 'For Disposal', 'Replacement', 'In Storage'],
             datasets: [{
-                data: [<?php echo "$count_in_use, $count_disposal, $count_replacement"; ?>],
-                backgroundColor: ['#AD49E1', '#7A1CAC', '#2E073F'],
+                data: [<?php echo "$count_in_use, $count_disposal, $count_replacement, $count_storage"; ?>],
+                backgroundColor: ['#AD49E1', '#7A1CAC', '#2E073F', '#6c757d'],
                 borderWidth: 5,
                 borderColor: '#ffffff',
                 hoverOffset: 15
@@ -251,17 +260,17 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
         }
     });
 
-    // 2. BAR CHART CONFIG (The New Graph)
+    // 2. BAR CHART CONFIG
     const barCtx = document.getElementById('assetBarChart').getContext('2d');
     new Chart(barCtx, {
         type: 'bar',
         data: {
-            labels: ['In Use', 'For Disposal', 'Replacement'],
+            labels: ['In Use', 'For Disposal', 'Replacement', 'In Storage'],
             datasets: [{
                 label: 'Total Units',
-                data: [<?php echo "$count_in_use, $count_disposal, $count_replacement"; ?>],
-                backgroundColor: ['#AD49E1', '#7A1CAC', '#2E073F'],
-                borderRadius: 10, // Rounded bars
+                data: [<?php echo "$count_in_use, $count_disposal, $count_replacement, $count_storage"; ?>],
+                backgroundColor: ['#AD49E1', '#7A1CAC', '#2E073F', '#6c757d'],
+                borderRadius: 10,
                 barThickness: 60
             }]
         },
@@ -269,7 +278,7 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false } // Hidden label sa taas para malinis
+                legend: { display: false }
             },
             scales: {
                 y: { 

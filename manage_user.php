@@ -21,7 +21,10 @@ if (isset($_GET['unlock_id'])) {
     $unlock_id = mysqli_real_escape_string($conn, $_GET['unlock_id']);
     $unlock_sql = "UPDATE users SET status='Active', login_attempts=0 WHERE id='$unlock_id'";
     if (mysqli_query($conn, $unlock_sql)) {
-        echo "<script>alert('Account Unlocked Successfully!'); window.location='manage_user.php';</script>";
+        $_SESSION['status_msg'] = "Account Unlocked Successfully!";
+        $_SESSION['status_type'] = "success";
+        header("Location: manage_user.php");
+        exit();
     }
 }
 
@@ -36,13 +39,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_user_submit'])) {
 
     $checkUser = mysqli_query($conn, "SELECT id FROM users WHERE username = '$username'");
     if (mysqli_num_rows($checkUser) > 0) {
-        echo "<script>alert('Error: Username already exists!'); window.location='manage_user.php';</script>";
+        $_SESSION['status_msg'] = "Error: Username already exists!";
+        $_SESSION['status_type'] = "error";
+        header("Location: manage_user.php");
+        exit();
     } else {
         $sql = "INSERT INTO users (fullname, username, password, role, status, login_attempts) 
                 VALUES ('$fullname', '$username', '$hashed_password', '$role', '$status', 0)";
         
         if (mysqli_query($conn, $sql)) {
-            echo "<script>alert('User Added Successfully!'); window.location='manage_user.php';</script>";
+            $_SESSION['status_msg'] = "User Added Successfully!";
+            $_SESSION['status_type'] = "success";
+            header("Location: manage_user.php");
+            exit();
         }
     }
 }
@@ -56,7 +65,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_user_submit'])) {
 
     $update_sql = "UPDATE users SET fullname='$fullname', role='$role', status='$status' WHERE id='$user_id'";
     if (mysqli_query($conn, $update_sql)) {
-        echo "<script>alert('User Updated Successfully!'); window.location='manage_user.php';</script>";
+        $_SESSION['status_msg'] = "User Updated Successfully!";
+        $_SESSION['status_type'] = "success";
+        header("Location: manage_user.php");
+        exit();
     }
 }
 
@@ -64,10 +76,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_user_submit'])) {
 if (isset($_GET['delete_id'])) {
     $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
     if ($delete_id == $_SESSION['user_id']) {
-        echo "<script>alert('Bawal i-delete ang sariling account!'); window.location='manage_user.php';</script>";
+        $_SESSION['status_msg'] = "Bawal i-delete ang sariling account!";
+        $_SESSION['status_type'] = "error";
+        header("Location: manage_user.php");
+        exit();
     } else {
         if (mysqli_query($conn, "DELETE FROM users WHERE id = '$delete_id'")) {
-            echo "<script>alert('User Deleted!'); window.location='manage_user.php';</script>";
+            $_SESSION['status_msg'] = "User Deleted Successfully!";
+            $_SESSION['status_type'] = "success";
+            header("Location: manage_user.php");
+            exit();
         }
     }
 }
@@ -96,7 +114,6 @@ $result = mysqli_query($conn, $query);
 
         body { background-color: var(--app-bg); font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; }
         
-        /* Main Content Responsiveness */
         .main-content { margin-left: var(--sidebar-width); padding: 35px; transition: all 0.3s ease; }
 
         .glass-header-container {
@@ -132,7 +149,6 @@ $result = mysqli_query($conn, $query);
         .modal-header { background: var(--main-gradient); color: white; border-radius: 30px 30px 0 0; padding: 25px; }
         .form-control, .form-select { border-radius: 15px; border: 2px solid #f1f0f7; padding: 12px; font-weight: 600; background: #fcfaff; }
 
-        /* Tablet & Mobile Styles */
         @media (max-width: 992px) { 
             .main-content { margin-left: 0; padding: 20px; } 
             .glass-header-container { border-radius: 20px; padding: 20px; text-align: center; justify-content: center; }
@@ -218,7 +234,7 @@ $result = mysqli_query($conn, $query);
                             <td><span class="<?php echo $statClass; ?>"><?php echo strtoupper(htmlspecialchars($row['status'])); ?></span></td>
                             <td class="text-center text-nowrap">
                                 <?php if ($row['status'] === 'locked'): ?>
-                                    <a href="manage_user.php?unlock_id=<?php echo $row['id']; ?>" class="btn-action-unlock me-1" title="Unlock Account" onclick="return confirm('Unlock this account?')">
+                                    <a href="javascript:void(0);" class="btn-action-unlock me-1" title="Unlock Account" onclick="confirmUnlock('<?php echo $row['id']; ?>')">
                                         <i class="fas fa-lock-open"></i>
                                     </a>
                                 <?php endif; ?>
@@ -240,7 +256,7 @@ $result = mysqli_query($conn, $query);
         </div>
     </div>
 
-    <!-- MODAL: ADD NEW USER (MANAGER REMOVED) -->
+    <!-- MODAL: ADD NEW USER -->
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -279,7 +295,7 @@ $result = mysqli_query($conn, $query);
         </div>
     </div>
 
-    <!-- MODAL: EDIT USER (MANAGER REMOVED) -->
+    <!-- MODAL: EDIT USER -->
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -306,6 +322,7 @@ $result = mysqli_query($conn, $query);
                             <select name="status" id="edit_status" class="form-select">
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
+                                <option value="locked">Locked</option>
                             </select>
                         </div>
                     </div>
@@ -327,6 +344,21 @@ $result = mysqli_query($conn, $query);
             document.getElementById('edit_status').value = status;
         }
 
+        function confirmUnlock(id) {
+            Swal.fire({
+                title: 'Unlock Account?',
+                text: "The user will be able to log in again.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#7A1CAC',
+                confirmButtonText: 'Yes, Unlock it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "manage_user.php?unlock_id=" + id;
+                }
+            })
+        }
+
         function confirmDelete(id) {
             Swal.fire({
                 title: 'Delete User?',
@@ -342,6 +374,20 @@ $result = mysqli_query($conn, $query);
                 }
             })
         }
+
+        // --- Notification Handler ---
+        <?php if(isset($_SESSION['status_msg'])): ?>
+            Swal.fire({
+                title: "<?php echo ($_SESSION['status_type'] == 'success') ? 'Success!' : 'Notice'; ?>",
+                text: "<?php echo $_SESSION['status_msg']; ?>",
+                icon: "<?php echo $_SESSION['status_type']; ?>",
+                confirmButtonColor: '#7A1CAC'
+            });
+            <?php 
+                unset($_SESSION['status_msg']); 
+                unset($_SESSION['status_type']); 
+            ?>
+        <?php endif; ?>
     </script>
 </body>
 </html>
