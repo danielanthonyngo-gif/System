@@ -12,14 +12,18 @@
     }
 
     $user_id = $_SESSION['user_id'];
-    $query   = "SELECT fullname FROM users WHERE id = '$user_id'";
+    $query   = "SELECT fullname,username FROM users WHERE id = '$user_id'";
     $result  = mysqli_query($conn, $query);
 
     if ($result && mysqli_num_rows($result) > 0) {
     $user_data    = mysqli_fetch_assoc($result);
-    $display_name = $user_data['fullname'];
+    $display_name = $user_data['fullname']; 
+    $display_name = explode(' ', trim($display_name))[0];
+    $emailname = $user_data['username'];    
+   
     } else {
     $display_name = "User";
+    $emailname = "User";
     }
 
     // --- ASSET TRACKING LOGIC ---
