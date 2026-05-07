@@ -73,16 +73,26 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     
     <style>
-        :root { 
-            --app-bg: #f8f9fd; 
-            --inspiro-purple: #7A1CAC; 
-            --sidebar-width: 260px; 
+          :root { 
+            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
+            --accent-purple: #8e44ad;
+            --bg-light: #f4f7fe; 
+            --sidebar-width: 260px;
         }
-        body { background-color: var(--app-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #2d3436; }
-        .content-wrapper { margin-left: var(--sidebar-width); padding: 30px; min-height: 100vh; }
-        
+       body { 
+            background-color: var(--bg-light); 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #362d36;
+            margin: 0;
+        }
+
+        .content-wrapper {
+            margin-left: var(--sidebar-width);
+            padding: 35px;
+            min-height: 100vh;
+        } 
         /* Dashboard Header */
-        .glass-header { background: white; border-radius: 20px; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 30px; }
+        /* .glass-header { background: white; border-radius: 20px; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 30px; } */
         
         /* Metric Cards */
         .metric-card { background: white; border-radius: 18px; padding: 20px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
@@ -144,17 +154,84 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
         .input-custom { border-radius: 12px; padding: 12px 15px; border: 1.5px solid #eee; background: #fafafa; font-weight: 600; font-size: 0.9rem; width: 100%; transition: 0.3s; }
         .input-custom:focus { border-color: var(--inspiro-purple); outline: none; background: #fff; }
         .form-label-custom { font-weight: 700; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; display: block; }
+    
+
+         .glass-header-container {
+            background: white;
+            border-radius: 35px;
+            padding: 25px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+            margin-bottom: 40px;
+            width: 100%;
+        }
+
+        .header-title-section h2 {
+            color: var(--accent-purple);
+            font-weight: 700;
+            font-size: 1.6rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-title-section p {
+            color: #a3aed0;
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .user-nav-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info-text { text-align: right; }
+
+        .user-name-top {
+            color: #2E073F;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        .sign-out-link {
+            color: #AD49E1;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .profile-avatar-pill {
+            width: 55px; height: 55px;
+            background: var(--main-gradient);
+            color: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.4rem;
+            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25);
+        }
     </style>
 </head>
 <body>
 
-<?php include 'aside.php'; ?>
+<?php include 'aside.php';
+$title="INVENTORY MANAGEMENT";
+$sub_title="Asset Tracking System"; ?>
 
 <div class="content-wrapper">
     <!-- Header -->
-    <div class="glass-header">
+    <!-- <div class="glass-header">
         <div>
-            <h4 class="fw-800 mb-0" style="color:var(--inspiro-purple)">INVENTORY MANAGEMENT</h4>
+            <h4 class="fw-800 mb-0" style="color:var(--inspiro-purple)"></h4>
             <p class="text-muted small mb-0">Inspiro Relia Inc. Asset Tracking System</p>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -166,7 +243,9 @@ $count_active = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total
                 <?php echo strtoupper(substr($display_name, 0, 1)); ?>
             </div>
         </div>
-    </div>
+    </div> -->
+
+     <?php include 'header.php'; ?>
 
     <!-- Quick Stats -->
     <div class="row g-3 mb-4">

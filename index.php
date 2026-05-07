@@ -158,25 +158,14 @@ $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as 
 </head>
 <body>
 
-<?php include 'aside.php'; ?>
+<?php include 'aside.php';
+$title="dfgdfg";
+$sub_title="Asset Record & Monitoring"; ?>
+
+
 
 <div class="content-wrapper">
-    <div class="glass-header-container">
-        <div class="header-title-section">
-            <h2>DASHBOARD</h2>
-            <p>Asset Record & Monitoring</p>
-        </div>
-
-        <div class="user-nav-section">
-            <div class="user-info-text">
-                <div class="user-name-top"><?php echo htmlspecialchars($display_name); ?></div>
-                <a href="logout.php" class="sign-out-link">Sign Out</a>
-            </div>
-            <div class="profile-avatar-pill">
-                <?php echo strtoupper(substr($display_name, 0, 1)); ?>
-            </div>
-        </div>
-    </div>
+  <?php include 'header.php'; ?>
 
     <div class="container-fluid p-0">
         <div class="row g-4 mb-4">
