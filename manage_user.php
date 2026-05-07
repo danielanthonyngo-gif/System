@@ -50,6 +50,7 @@
     $unlock_id  = mysqli_real_escape_string($conn, $_GET['unlock_id']);
     $unlock_sql = "UPDATE users SET status='Active', login_attempts=0 WHERE id='$unlock_id'";
     if (mysqli_query($conn, $unlock_sql)) {
+         logAudit($conn, 'UNLOCK_USER', 'user', $unlock_id, null, ['status' => 'Active']);
         echo "<script>alert('Account Unlocked Successfully!'); window.location='manage_user.php';</script>";
     }
     }
@@ -117,7 +118,10 @@
     if ($delete_id == $_SESSION['user_id']) {
         echo "<script>alert('Bawal i-delete ang sariling account!'); window.location='manage_user.php';</script>";
     } else {
+        $delete_query = mysqli_query($conn, "SELECT * FROM users WHERE id='$delete_id'");
+        $user_data = mysqli_fetch_assoc($delete_query);
         if (mysqli_query($conn, "DELETE FROM users WHERE id = '$delete_id'")) {
+            logAudit($conn, 'DELETE_USER', 'user', $delete_id, $user_data, null);   
             echo "<script>alert('User Deleted!'); window.location='manage_user.php';</script>";
         }
     }
