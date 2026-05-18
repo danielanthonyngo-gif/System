@@ -1,29 +1,31 @@
 <?php
     session_start();
     include 'config.php';
+    
 
     $display_name = "Guest";
     if (isset($_SESSION['user_id'])) {
-    $user_id    = $_SESSION['user_id'];
-    $user_query = mysqli_query($conn, "SELECT fullname FROM users WHERE id = '$user_id' LIMIT 1");
-    if ($row = mysqli_fetch_assoc($user_query)) {
-        $display_name = $row['fullname'];
-    }
+        $user_id    = $_SESSION['user_id'];
+        $user_query = mysqli_query($conn, "SELECT fullname FROM users WHERE id = '$user_id' LIMIT 1");
+        if ($row = mysqli_fetch_assoc($user_query)) {
+            $display_name = $row['fullname'];
+            $_SESSION['fullname'] = $row['fullname']; // Set for audit
+        }
     }
 
     // --- INITIALIZE LISTS ---
     if (! isset($_SESSION['alpha_list'])) {
-    $_SESSION['alpha_list'] = [
-        ['name' => 'BDO'], ['name' => 'BDO Insure'], ['name' => 'BDO Life'],
-        ['name' => 'Pacsan'], ['name' => 'BDO Core'], ['name' => 'Flight Center'],
-        ['name' => "Manila Doctor's Hospital"], ['name' => 'Ignite'], ['name' => 'Viagogo'],
-    ];
+        $_SESSION['alpha_list'] = [
+            ['name' => 'BDO'], ['name' => 'BDO Insure'], ['name' => 'BDO Life'],
+            ['name' => 'Pacsan'], ['name' => 'BDO Core'], ['name' => 'Flight Center'],
+            ['name' => "Manila Doctor's Hospital"], ['name' => 'Ignite'], ['name' => 'Viagogo'],
+        ];
     }
     if (! isset($_SESSION['beta_list'])) {
-    $_SESSION['beta_list'] = [
-        ['name' => 'Grab Support'], ['name' => 'Grab COE'], ['name' => 'Shark Ninja'],
-        ['name' => 'Hallmark'], ['name' => 'ANA'], ['name' => 'AUB'],
-    ];
+        $_SESSION['beta_list'] = [
+            ['name' => 'Grab Support'], ['name' => 'Grab COE'], ['name' => 'Shark Ninja'],
+            ['name' => 'Hallmark'], ['name' => 'ANA'], ['name' => 'AUB'],
+        ];
     }
 
     // --- HELPER FUNCTION TO CHECK DUPLICATES ---
@@ -63,28 +65,6 @@
             header("Location: " . $_SERVER['PHP_SELF']);
             exit();
         }
-    }
-    }
-
-    // --- DELETE LOGIC ---
-    if (isset($_GET['del'])) {
-    $target = $_GET['del'];
-    $type   = $_GET['type'];
-    if ($type == 'alpha') {
-        foreach ($_SESSION['alpha_list'] as $k => $v) {if ($v['name'] == $target) {
-            unset($_SESSION['alpha_list'][$k]);
-        }
-        }
-        $_SESSION['alpha_list'] = array_values($_SESSION['alpha_list']);
-    } else {
-        foreach ($_SESSION['beta_list'] as $k => $v) {if ($v['name'] == $target) {
-            unset($_SESSION['beta_list'][$k]);
-        }
-        }
-        $_SESSION['beta_list'] = array_values($_SESSION['beta_list']);
-    }
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
     }
 ?>
 
