@@ -77,13 +77,13 @@
 .user-name-top {
     font-weight: 600;
     font-size: 14px;
-    color: #1e293b;
+    color: #2E073F;
     letter-spacing: -0.2px;
 }
 
 .dropdown-arrow {
     font-size: 10px;
-    color: #5b6e8c;
+    color: #845b8c;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -94,7 +94,7 @@
 .profile-avatar-pill {
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    background: linear-gradient(135deg, #7A1CAC, #7A1CAC);
     border-radius: 40px;
     display: flex;
     align-items: center;
@@ -160,7 +160,7 @@
 .dropdown-avatar {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    background: linear-gradient(135deg, #7A1CAC, #7A1CAC);
     border-radius: 40px;
     display: flex;
     align-items: center;

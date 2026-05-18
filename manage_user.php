@@ -451,42 +451,63 @@
 
     <!-- MODAL: EDIT USER -->
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-700">Edit User Profile</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form action="manage_user.php" method="POST">
-                    <input type="hidden" name="user_id" id="edit_user_id">
-                    <div class="modal-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-700">Full Name</label>
-                            <input type="text" name="fullname" id="edit_fullname" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-700">Role</label>
-                            <select name="role" id="edit_role" class="form-select">
-                                <option value="Technical Support">Technical Support</option>
-                                <option value="Administrator">Administrator</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-700">Status</label>
-                            <select name="status" id="edit_status" class="form-select">
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0 p-4 pt-0">
-                        <button type="button" class="btn btn-light rounded-3 fw-700" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" name="edit_user_submit" class="btn btn-add px-4">Save Changes</button>
-                    </div>
-                </form>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content style-modal">
+            <div class="modal-header">
+                <h5 class="modal-title fw-700">Edit User Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <form action="manage_user.php" method="POST">
+                <input type="hidden" name="user_id" id="edit_user_id">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-700">Full Name</label>
+                        <input type="text" name="fullname" id="edit_fullname" class="form-control cust-input" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-700">Role</label>
+                        <select name="role" id="edit_role" class="form-select cust-dropdown" required>
+                            <option value="Technical Support">Technical Support</option>
+                            <option value="Administrator">Administrator</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-700">Status</label>
+                        <select name="status" id="edit_status" class="form-select cust-dropdown" required>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-3 fw-700" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" name="edit_user_submit" class="btn btn-add px-4">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+
+<style>
+    /* Pinipilit nating ibalik ang dropdown arrow icon na pwedeng nawawala dahil sa custom theme */
+    .cust-dropdown {
+        appearance: auto !important; /* Binabalik ang katutubong arrow ng browser */
+        -webkit-appearance: auto !important;
+        -moz-appearance: auto !important;
+        padding-right: 2rem !important; /* Para hindi matakpan ang text */
+        border-radius: 12px !important; /* Para terno sa bilog na kurbada ng UI mo */
+        border: 1px solid #e2e8f0;
+        height: 50px; /* Para pantay sa template mo */
+    }
+    
+    .cust-input {
+        border-radius: 12px !important;
+        height: 50px;
+        border: 1px solid #e2e8f0;
+    }
+</style>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
