@@ -163,7 +163,8 @@ $users_result = mysqli_query($conn, $users_query);
         <form method="GET" action="audit.php" class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label fw-600 small">Search</label>
-                <input type="text" name="search" class="form-control" placeholder="Name, action, IP..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                <!-- DITO PO BINAGO YUNG PLACEHOLDER: Name, Action, IP... -->
+                <input type="text" name="search" class="form-control" placeholder="Name, Action, IP..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
             </div>
             <div class="col-md-2">
                 <label class="form-label fw-600 small">Action Type</label>

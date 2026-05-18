@@ -161,7 +161,7 @@ $count_storage = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as tota
 <body>
 
 <?php include 'aside.php';
-    $title     = "dfgdfg";
+    $title     = "Dashboard";
 $sub_title = "Asset Record & Monitoring"; ?>
 
 

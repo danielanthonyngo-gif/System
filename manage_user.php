@@ -45,20 +45,32 @@
     return $errors;
     }
 
+    // Variable para sa SweetAlert Notifications
+    $swal_script = "";
+
     // Logic for Unlocking User
     if (isset($_GET['unlock_id'])) {
     $unlock_id  = mysqli_real_escape_string($conn, $_GET['unlock_id']);
     $unlock_sql = "UPDATE users SET status='Active', login_attempts=0 WHERE id='$unlock_id'";
     if (mysqli_query($conn, $unlock_sql)) {
          logAudit($conn, 'UNLOCK_USER', 'user', $unlock_id, null, ['status' => 'Active']);
-        echo "<script>alert('Account Unlocked Successfully!'); window.location='manage_user.php';</script>";
+        $swal_script = "<script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    title: 'Unlocked!',
+                    text: 'Account Unlocked Successfully!',
+                    icon: 'success',
+                    confirmButtonColor: '#7A1CAC'
+                }).then(() => { window.location='manage_user.php'; });
+            });
+        </script>";
     }
     }
 
-    // Logic for Adding User with password validation
+    // Logic for Adding User with password validation and duplicate check
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_user_submit'])) {
-    $fullname = mysqli_real_escape_string($conn, $_POST['fullname']);
-    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $fullname = mysqli_real_escape_string($conn, trim($_POST['fullname']));
+    $username = mysqli_real_escape_string($conn, trim($_POST['username']));
     $password = $_POST['password'];
 
     // Validate password strength
@@ -74,9 +86,34 @@
     $role            = mysqli_real_escape_string($conn, $_POST['role']);
     $status          = "Active";
 
-    $checkUser = mysqli_query($conn, "SELECT id FROM users WHERE username = '$username'");
+    // Check kung may umiiral nang kaparehong username/email O fullname
+    $checkUser = mysqli_query($conn, "SELECT id, fullname, username FROM users WHERE username = '$username' OR fullname = '$fullname' LIMIT 1");
+    
     if (mysqli_num_rows($checkUser) > 0) {
-        echo "<script>alert('Error: Username already exists!'); window.location='manage_user.php';</script>";
+        $existingUser = mysqli_fetch_assoc($checkUser);
+        if (strcasecmp($existingUser['username'], $username) == 0) {
+            $swal_script = "<script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    Swal.fire({
+                        title: 'Registration Failed',
+                        text: 'Error: Username / Email already exists!',
+                        icon: 'error',
+                        confirmButtonColor: '#7A1CAC'
+                    });
+                });
+            </script>";
+        } else {
+            $swal_script = "<script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    Swal.fire({
+                        title: 'Registration Failed',
+                        text: 'Error: A user with this Full Name already exists!',
+                        icon: 'error',
+                        confirmButtonColor: '#7A1CAC'
+                    });
+                });
+            </script>";
+        }
     } else {
         $sql = "INSERT INTO users (fullname, username, password, role, status, login_attempts)
                     VALUES ('$fullname', '$username', '$hashed_password', '$role', '$status', 0)";
@@ -87,28 +124,62 @@
             'username' => $username,
             'role' => $role
         ]);
-            echo "<script>alert('User Added Successfully!'); window.location='manage_user.php';</script>";
+            $swal_script = "<script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'User Added Successfully!',
+                        icon: 'success',
+                        confirmButtonColor: '#7A1CAC'
+                    }).then(() => { window.location='manage_user.php'; });
+                });
+            </script>";
         }
     }
     }
 
-    // Logic for Editing User
+    // Logic for Editing User with duplicate check
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_user_submit'])) {
     $user_id  = mysqli_real_escape_string($conn, $_POST['user_id']);
-    $fullname = mysqli_real_escape_string($conn, $_POST['fullname']);
+    $fullname = mysqli_real_escape_string($conn, trim($_POST['fullname']));
     $role     = mysqli_real_escape_string($conn, $_POST['role']);
     $status   = mysqli_real_escape_string($conn, $_POST['status']);
 
-    $update_sql = "UPDATE users SET fullname='$fullname', role='$role', status='$status' WHERE id='$user_id'";
-    $old_query = mysqli_query($conn, "SELECT * FROM users WHERE id='$user_id'");
-    $old_data = mysqli_fetch_assoc($old_query);
-    if (mysqli_query($conn, $update_sql)) {
-        logAudit($conn, 'EDIT_USER', 'user', $user_id, $old_data, [
-            'fullname' => $fullname,
-            'role' => $role,
-            'status' => $status
-        ]);
-        echo "<script>alert('User Updated Successfully!'); window.location='manage_user.php';</script>";
+    // Siguraduhin na walang ibang user ang may kaparehong Full Name maliban sa kasalukuyang ine-edit natin
+    $checkDuplicateEdit = mysqli_query($conn, "SELECT id FROM users WHERE fullname = '$fullname' AND id != '$user_id' LIMIT 1");
+
+    if (mysqli_num_rows($checkDuplicateEdit) > 0) {
+        $swal_script = "<script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    title: 'Update Failed',
+                    text: 'Error: Another user is already using this Full Name!',
+                    icon: 'error',
+                    confirmButtonColor: '#7A1CAC'
+                });
+            });
+        </script>";
+    } else {
+        $update_sql = "UPDATE users SET fullname='$fullname', role='$role', status='$status' WHERE id='$user_id'";
+        $old_query = mysqli_query($conn, "SELECT * FROM users WHERE id='$user_id'");
+        $old_data = mysqli_fetch_assoc($old_query);
+        if (mysqli_query($conn, $update_sql)) {
+            logAudit($conn, 'EDIT_USER', 'user', $user_id, $old_data, [
+                'fullname' => $fullname,
+                'role' => $role,
+                'status' => $status
+            ]);
+            $swal_script = "<script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    Swal.fire({
+                        title: 'Updated!',
+                        text: 'User Updated Successfully!',
+                        icon: 'success',
+                        confirmButtonColor: '#7A1CAC'
+                    }).then(() => { window.location='manage_user.php'; });
+                });
+            </script>";
+        }
     }
     }
 
@@ -116,13 +187,31 @@
     if (isset($_GET['delete_id'])) {
     $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
     if ($delete_id == $_SESSION['user_id']) {
-        echo "<script>alert('Bawal i-delete ang sariling account!'); window.location='manage_user.php';</script>";
+        $swal_script = "<script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    title: 'Action Denied',
+                    text: 'Bawal i-delete ang sariling account!',
+                    icon: 'warning',
+                    confirmButtonColor: '#7A1CAC'
+                });
+            });
+        </script>";
     } else {
         $delete_query = mysqli_query($conn, "SELECT * FROM users WHERE id='$delete_id'");
         $user_data = mysqli_fetch_assoc($delete_query);
         if (mysqli_query($conn, "DELETE FROM users WHERE id = '$delete_id'")) {
             logAudit($conn, 'DELETE_USER', 'user', $delete_id, $user_data, null);   
-            echo "<script>alert('User Deleted!'); window.location='manage_user.php';</script>";
+            $swal_script = "<script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: 'User Deleted Successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#7A1CAC'
+                    }).then(() => { window.location='manage_user.php'; });
+                });
+            </script>";
         }
     }
     }
@@ -327,8 +416,8 @@
                             <input type="text" name="fullname" id="add_fullname" class="form-control" placeholder="Enter Full Name" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-700">Username / Email</label>
-                            <input type="email" name="username" id="add_username" class="form-control" placeholder="Enter Username" required>
+                            <label class="form-label fw-700">Email</label>
+                            <input type="email" name="username" id="add_username" class="form-control" placeholder="Enter Email" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-700">Password</label>
@@ -519,5 +608,8 @@
             cursor: not-allowed;
         }
     </style>
+    
+    <!-- Dito i-eexecute ang SweetAlert validation triggers mula sa PHP backend -->
+    <?php echo $swal_script; ?>
 </body>
 </html>

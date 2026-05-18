@@ -357,8 +357,11 @@ $sub_title = "Asset Tracking System"; ?>
                 </form>
             </div>
             <div class="col-md-5 text-end">
-                <button class="btn p-3 px-4 rounded-4 fw-bold me-2" style="background:var(--inspiro-purple); color:white;" data-bs-toggle="modal" data-bs-target="#createItemModal">
-                    <i class="fas fa-plus me-2"></i>New Asset
+                <button class="btn p-3 px-4 rounded-4 fw-bold me-2" 
+                style="background-color: #6f42c1; color: #ffffff !important; border: none;" 
+                data-bs-toggle="modal" 
+                data-bs-target="#createItemModal">
+                <i class="fas fa-plus me-2"></i>New Asset
                 </button>
                 <button onclick="exportInventoryPDF()" class="btn btn-dark p-3 px-4 rounded-4 fw-bold">
                     <i class="fas fa-file-pdf me-2"></i>Export PDF
@@ -492,7 +495,7 @@ $sub_title = "Asset Tracking System"; ?>
                 </div>
                 <div class="text-end mt-4">
                     <button type="button" class="btn btn-light px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background:var(--inspiro-purple); color:white;">Save Asset</button>
+                    <button type="submit" name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
                 </div>
             </form>
         </div>

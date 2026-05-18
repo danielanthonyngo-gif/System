@@ -26,14 +26,43 @@
     ];
     }
 
+    // --- HELPER FUNCTION TO CHECK DUPLICATES ---
+    function is_duplicate_area($new_name) {
+        $clean_name = strtolower(trim($new_name));
+        
+        // Check sa Alpha List
+        foreach ($_SESSION['alpha_list'] as $area) {
+            if (strtolower(trim($area['name'])) === $clean_name) {
+                return true;
+            }
+        }
+        // Check sa Beta List
+        foreach ($_SESSION['beta_list'] as $area) {
+            if (strtolower(trim($area['name'])) === $clean_name) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // --- ADD LOGIC ---
+    $error_msg = "";
     if (isset($_POST['add_area'])) {
-    $new_name = $_POST['area_name'];
+    $new_name = trim($_POST['area_name']);
     $building = $_POST['building_type'];
     if (! empty($new_name)) {
-        if ($building == 'Alpha') {$_SESSION['alpha_list'][] = ['name' => $new_name];} else { $_SESSION['beta_list'][] = ['name' => $new_name];}
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit();
+        // I-reject kung duplicate sa kahit anong listahan
+        if (is_duplicate_area($new_name)) {
+            $error_msg = "The area '" . htmlspecialchars($new_name) . "' already exists!";
+        } else {
+            if ($building == 'Alpha') {
+                $_SESSION['alpha_list'][] = ['name' => $new_name];
+            } else { 
+                $_SESSION['beta_list'][] = ['name' => $new_name];
+            }
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit();
+        }
     }
     }
 
@@ -164,15 +193,6 @@
             transition: 0.3s;
             box-shadow: 0 10px 20px rgba(0,0,0,0.05);
         }
-        /* :root { --app-bg: #f4f7fe; --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%); --accent-purple: #8e44ad; --sidebar-width: 260px; }
-        body { background-color: var(--app-bg); font-family: 'Plus Jakarta Sans', sans-serif; }
-        .content { margin-left: var(--sidebar-width); padding: 35px; }
-
-        .glass-header-container {
-            background: white; border-radius: 35px; padding: 25px 40px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03); margin-bottom: 30px;
-        } */
 
         .btn-add-area {
             background: var(--main-gradient); color: white; border: none; padding: 12px 25px; border-radius: 18px; font-weight: 700; transition: 0.3s;
@@ -211,25 +231,19 @@
 $sub_title = "Location Record & Monitoring"; ?>
 
 <div class="content-wrapper">
-    <!-- <div class="glass-header-container">
-        <div>
-            <h2 style="color: var(--accent-purple); font-weight: 700; margin: 0;">VIEW AREAS</h2>
-            <p style="color: #a3aed0; margin: 0;">Location Record & Monitoring</p>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            <div class="text-end">
-                <div style="font-weight: 600;"><?php echo htmlspecialchars($display_name); ?></div>
-                <a href="logout.php" style="color: #AD49E1; font-size: 0.8rem; text-decoration: none; font-weight: 600;">Sign Out</a>
-            </div>
-            <div style="width: 50px; height: 50px; background: var(--main-gradient); border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
-                <?php echo strtoupper(substr($display_name, 0, 1)); ?>
-            </div>
-        </div>
-    </div> -->
 
      <?php include 'header.php'; ?>
 
     <div class="container-fluid p-0">
+        
+        <!-- ERROR NOTIFICATION BANNER -->
+        <?php if (!empty($error_msg)): ?>
+            <div class="alert alert-danger alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius: 18px; box-shadow: 0 4px 15px rgba(255,0,0,0.05);">
+                <i class="fas fa-exclamation-circle me-2"></i> <strong>Error:</strong> <?php echo $error_msg; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="disabled" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- BUTTON ALIGNED TO THE RIGHT -->
         <div class="d-flex justify-content-end mb-4">
             <button class="btn-add-area" data-bs-toggle="modal" data-bs-target="#addModal">
@@ -318,5 +332,14 @@ $sub_title = "Location Record & Monitoring"; ?>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Script para awtomatikong magpakita ang modal ulit kapag may error -->
+<?php if (!empty($error_msg)): ?>
+<script>
+    var addModal = new bootstrap.Modal(document.getElementById('addModal'));
+    addModal.show();
+</script>
+<?php endif; ?>
+
 </body>
 </html>

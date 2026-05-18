@@ -8,10 +8,8 @@ $error_msg = "";
 if (isset($_POST['login'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
-    $selected_role = $_POST['role'];
 
-    // Prepared statement para i-check ang user
-    // $stmt = $conn->prepare("SELECT * FROM users WHERE username = ? AND role = ? LIMIT 1");
+    // Prepared statement para i-check ang user gamit ang username/email lang
     $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?  LIMIT 1");
     $stmt->bind_param("s", $username);
     $stmt->execute();
@@ -32,7 +30,7 @@ if (isset($_POST['login'])) {
 
                 $_SESSION['user'] = $user['fullname'];
                 $_SESSION['user_id'] = $user['id'];
-                $_SESSION['role'] = $user['role']; 
+                $_SESSION['role'] = $user['role']; // Naka-save pa rin ito sa session para magamit mo sa ibang pages
 
                 header("Location: index.php");
                 exit(); 
@@ -58,7 +56,8 @@ if (isset($_POST['login'])) {
             }
         }
     } else {
-        $error_msg = "Maling Username o Role! Siguraduhing tama ang iyong pinili.";
+        // Inalis ang salitang "Role" sa error message dahil username na lang ang chine-check
+        $error_msg = "Maling Username! Siguraduhing tama ang iyong ininput.";
     }
 }
 ?>
