@@ -11,38 +11,14 @@
     }
     }
 
-    // --- INITIALIZE LISTS ---
-    if (! isset($_SESSION['alpha_list'])) {
-    $_SESSION['alpha_list'] = [
-        ['name' => 'BDO'], ['name' => 'BDO Insure'], ['name' => 'BDO Life'],
-        ['name' => 'Pacsan'], ['name' => 'BDO Core'], ['name' => 'Flight Center'],
-        ['name' => "Manila Doctor's Hospital"], ['name' => 'Ignite'], ['name' => 'Viagogo'],
-    ];
-    }
-    if (! isset($_SESSION['beta_list'])) {
-    $_SESSION['beta_list'] = [
-        ['name' => 'Grab Support'], ['name' => 'Grab COE'], ['name' => 'Shark Ninja'],
-        ['name' => 'Hallmark'], ['name' => 'ANA'], ['name' => 'AUB'],
-    ];
-    }
-
-    // --- HELPER FUNCTION TO CHECK DUPLICATES ---
-    function is_duplicate_area($new_name) {
-        $clean_name = strtolower(trim($new_name));
+    // --- HELPER FUNCTION TO DETECT IF THE AREA IS EXISTING ---
+    function is_duplicate_area($conn, $new_name) {
+        $clean_name = mysqli_real_escape_string($conn, trim($new_name));
         
-        // Check sa Alpha List
-        foreach ($_SESSION['alpha_list'] as $area) {
-            if (strtolower(trim($area['name'])) === $clean_name) {
-                return true;
-            }
-        }
-        // Check sa Beta List
-        foreach ($_SESSION['beta_list'] as $area) {
-            if (strtolower(trim($area['name'])) === $clean_name) {
-                return true;
-            }
-        }
-        return false;
+        // Mag-query sa database gamit ang LOWER() para case-insensitive ang pag-detect
+        $query = mysqli_query($conn, "SELECT account_id FROM client_accounts WHERE LOWER(client_name) = LOWER('$clean_name') LIMIT 1");
+        
+        return mysqli_num_rows($query) > 0;
     }
 
     // --- ADD LOGIC ---
@@ -50,41 +26,42 @@
     if (isset($_POST['add_area'])) {
     $new_name = trim($_POST['area_name']);
     $building = $_POST['building_type'];
+    
     if (! empty($new_name)) {
-        // I-reject kung duplicate sa kahit anong listahan
-        if (is_duplicate_area($new_name)) {
+        // I-reject kung duplicate/existing na sa database
+        if (is_duplicate_area($conn, $new_name)) {
             $error_msg = "The area '" . htmlspecialchars($new_name) . "' already exists!";
         } else {
-            if ($building == 'Alpha') {
-                $_SESSION['alpha_list'][] = ['name' => $new_name];
-            } else { 
-                $_SESSION['beta_list'][] = ['name' => $new_name];
+            // I-map kung saang building id ipapasok (1 = Alpha, 2 = Beta)
+            $building_id = ($building == 'Alpha') ? 1 : 2;
+            $safe_name = mysqli_real_escape_string($conn, $new_name);
+            
+            // I-insert direkta sa iyong phpMyAdmin table
+            $insert_query = "INSERT INTO client_accounts (building_id, client_name, in_use_count, avail_count) VALUES ($building_id, '$safe_name', 0, 0)";
+            
+            if (mysqli_query($conn, $insert_query)) {
+                header("Location: " . $_SERVER['PHP_SELF']);
+                exit();
+            } else {
+                $error_msg = "Database Error: " . mysqli_error($conn);
             }
-            header("Location: " . $_SERVER['PHP_SELF']);
-            exit();
         }
     }
     }
 
     // --- DELETE LOGIC ---
-    if (isset($_GET['del'])) {
-    $target = $_GET['del'];
-    $type   = $_GET['type'];
-    if ($type == 'alpha') {
-        foreach ($_SESSION['alpha_list'] as $k => $v) {if ($v['name'] == $target) {
-            unset($_SESSION['alpha_list'][$k]);
-        }
-        }
-        $_SESSION['alpha_list'] = array_values($_SESSION['alpha_list']);
+    if (isset($_GET['del_id'])) {
+    $target_id = intval($_GET['del_id']); // Gamitin natin ang account_id para sa mas ligtas na pagbura sa DB
+    
+    $delete_query = "DELETE FROM client_accounts WHERE account_id = $target_id";
+    if (mysqli_query($conn, $delete_query)) {
+        // Mag-set ng session para magpakita ang Success Notif pagkatapos mag-refresh
+        $_SESSION['delete_success'] = true;
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit();
     } else {
-        foreach ($_SESSION['beta_list'] as $k => $v) {if ($v['name'] == $target) {
-            unset($_SESSION['beta_list'][$k]);
-        }
-        }
-        $_SESSION['beta_list'] = array_values($_SESSION['beta_list']);
+        $error_msg = "Failed to delete area: " . mysqli_error($conn);
     }
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit();
     }
 ?>
 
@@ -97,6 +74,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <style>
           :root {
@@ -209,6 +187,7 @@
             position: absolute; top: 10px; right: 10px; background: rgba(255, 0, 0, 0.1); color: #ff4757;
             border: none; width: 25px; height: 25px; border-radius: 8px; font-size: 0.7rem;
             display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; z-index: 5;
+            cursor: pointer;
         }
         .area-card:hover .delete-overlay { opacity: 1; }
 
@@ -221,14 +200,14 @@
         .section-title { font-weight: 800; font-size: 1.1rem; margin-bottom: 2rem; color: var(--accent-purple); display: flex; align-items: center; gap: 15px; }
         .section-title::after { content: ""; flex-grow: 1; height: 2px; background: linear-gradient(90deg, #e2e8f0, transparent); }
 
-        @media (max-width: 992px) { .content { margin-left: 0; } }
+        @media (max-width: 992px) { .content-wrapper { margin-left: 0; } }
     </style>
 </head>
 <body>
 
 <?php include 'aside.php';
     $title     = "VIEW AREAS";
-$sub_title = "Location Record & Monitoring"; ?>
+    $sub_title = "Location Record & Monitoring"; ?>
 
 <div class="content-wrapper">
 
@@ -236,34 +215,37 @@ $sub_title = "Location Record & Monitoring"; ?>
 
     <div class="container-fluid p-0">
         
-        <!-- ERROR NOTIFICATION BANNER -->
         <?php if (!empty($error_msg)): ?>
             <div class="alert alert-danger alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius: 18px; box-shadow: 0 4px 15px rgba(255,0,0,0.05);">
                 <i class="fas fa-exclamation-circle me-2"></i> <strong>Error:</strong> <?php echo $error_msg; ?>
-                <button type="button" class="btn-close" data-bs-dismiss="disabled" data-bs-dismiss="alert" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
 
-        <!-- BUTTON ALIGNED TO THE RIGHT -->
         <div class="d-flex justify-content-end mb-4">
             <button class="btn-add-area" data-bs-toggle="modal" data-bs-target="#addModal">
                 <i class="fas fa-plus-circle me-2"></i> ADD NEW AREA
             </button>
         </div>
 
-        <!-- ALPHA -->
         <div class="section-title">ALPHA BUILDING & OTHERS</div>
         <div class="row g-4 mb-5">
-            <?php foreach ($_SESSION['alpha_list'] as $area):
-                    $name  = $area['name'];
+            <?php 
+                // Kukunin ang mga areas mula sa database kung saan building_id ay 1 (Alpha)
+                $alpha_query = mysqli_query($conn, "SELECT * FROM client_accounts WHERE building_id = 1 ORDER BY account_id ASC");
+                while ($area = mysqli_fetch_assoc($alpha_query)):
+                    $id    = $area['account_id'];
+                    $name  = $area['client_name'];
+                    
+                    // Live counting query mula sa 'assets' table mo
                     $res   = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '" . mysqli_real_escape_string($conn, $name) . "'");
                     $count = mysqli_fetch_assoc($res)['t'] ?? 0;
             ?>
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                 <div class="area-card text-center">
-                    <a href="?del=<?php echo urlencode($name); ?>&type=alpha" class="delete-overlay" onclick="return confirm('Delete area?')"><i class="fas fa-times"></i></a>
+                    <a onclick="confirmDelete(<?php echo $id; ?>, '<?php echo addslashes($name); ?>')" class="delete-overlay"><i class="fas fa-times"></i></a>
                     <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
-                        <div class="card-header-label"><?php echo $name; ?></div>
+                        <div class="card-header-label"><?php echo htmlspecialchars($name); ?></div>
                         <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
                         <div class="stat-container">
                             <div class="stat-box border-end"><h5><?php echo $count; ?></h5><small>In Use</small></div>
@@ -272,22 +254,27 @@ $sub_title = "Location Record & Monitoring"; ?>
                     </a>
                 </div>
             </div>
-            <?php endforeach; ?>
+            <?php endwhile; ?>
         </div>
 
-        <!-- BETA -->
         <div class="section-title">BETA BUILDING</div>
         <div class="row g-4 mb-4">
-            <?php foreach ($_SESSION['beta_list'] as $area):
-                    $name  = $area['name'];
+            <?php 
+                // Kukunin ang mga areas mula sa database kung saan building_id ay 2 (Beta)
+                $beta_query = mysqli_query($conn, "SELECT * FROM client_accounts WHERE building_id = 2 ORDER BY account_id ASC");
+                while ($area = mysqli_fetch_assoc($beta_query)):
+                    $id    = $area['account_id'];
+                    $name  = $area['client_name'];
+                    
+                    // Live counting query mula sa 'assets' table mo
                     $res   = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '" . mysqli_real_escape_string($conn, $name) . "'");
                     $count = mysqli_fetch_assoc($res)['t'] ?? 0;
             ?>
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                 <div class="area-card text-center">
-                    <a href="?del=<?php echo urlencode($name); ?>&type=beta" class="delete-overlay" onclick="return confirm('Delete area?')"><i class="fas fa-times"></i></a>
+                    <a onclick="confirmDelete(<?php echo $id; ?>, '<?php echo addslashes($name); ?>')" class="delete-overlay"><i class="fas fa-times"></i></a>
                     <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
-                        <div class="card-header-label"><?php echo $name; ?></div>
+                        <div class="card-header-label"><?php echo htmlspecialchars($name); ?></div>
                         <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
                         <div class="stat-container">
                             <div class="stat-box border-end"><h5><?php echo $count; ?></h5><small>In Use</small></div>
@@ -296,12 +283,11 @@ $sub_title = "Location Record & Monitoring"; ?>
                     </a>
                 </div>
             </div>
-            <?php endforeach; ?>
+            <?php endwhile; ?>
         </div>
 </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 25px;">
@@ -309,7 +295,7 @@ $sub_title = "Location Record & Monitoring"; ?>
                 <h5 style="color: #7A1CAC; font-weight: 800;">ADD NEW AREA</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST">
+            <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label small fw-700">Area Name</label>
@@ -318,7 +304,7 @@ $sub_title = "Location Record & Monitoring"; ?>
                     <div class="mb-3">
                         <label class="form-label small fw-700">Select Building</label>
                         <select name="building_type" class="form-select" style="border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0;">
-                            <option value="Alpha">Alpha Building & Others</option>
+                            <option value="Alpha">Alpha Building</option>
                             <option value="Beta">Beta Building</option>
                         </select>
                     </div>
@@ -332,13 +318,51 @@ $sub_title = "Location Record & Monitoring"; ?>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Script para awtomatikong magpakita ang modal ulit kapag may error -->
+<script>
+    // FUNCTION PARA SA COMFIRMATION NOTIF BAGO MAG-DELETE
+    function confirmDelete(id, areaName) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You are about to delete '" + areaName + "'. This cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#7A1CAC', // Kulay purple para match sa theme mo
+            cancelButtonColor: '#ff4757',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            background: '#ffffff',
+            borderRadius: '25px'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Pag pinindot ang Yes, itutuloy ang pag-redirect sa URL para mabura sa DB
+                window.location.href = "?del_id=" + id;
+            }
+        });
+    }
+</script>
+
 <?php if (!empty($error_msg)): ?>
 <script>
     var addModal = new bootstrap.Modal(document.getElementById('addModal'));
     addModal.show();
 </script>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['delete_success'])): ?>
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: 'The area has been successfully deleted.',
+        timer: 2500,
+        showConfirmButton: false,
+        background: '#ffffff',
+        borderRadius: '25px'
+    });
+</script>
+<?php unset($_SESSION['delete_success']); ?>
 <?php endif; ?>
 
 </body>
