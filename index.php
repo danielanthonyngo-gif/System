@@ -217,20 +217,11 @@ $sub_title = "Asset Record & Monitoring"; ?>
         </div>
 
         <div class="row g-4">
-            <div class="col-xl-6 col-lg-6 col-md-12">
+            <div class="col-12">
                 <div class="chart-card">
                     <h5 class="fw-bold mb-4" style="color: #2E073F;">Asset Distribution Breakdown</h5>
-                    <div style="height: 350px;">
+                    <div style="height: 500px;">
                         <canvas id="assetPieChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-6 col-lg-6 col-md-12">
-                <div class="chart-card">
-                    <h5 class="fw-bold mb-4" style="color: #2E073F; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">Asset Lifecycle & Maintenance Trends</h5>
-                    <div style="height: 350px;">
-                        <canvas id="trendMetricsChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -274,7 +265,7 @@ $sub_title = "Asset Record & Monitoring"; ?>
                     labels: { 
                         padding: 20, 
                         usePointStyle: true, 
-                        font: { weight: '600' } 
+                        font: { weight: '600', size: 14 } 
                     } 
                 },
                 tooltip: {
@@ -284,116 +275,6 @@ $sub_title = "Asset Record & Monitoring"; ?>
                             let value = context.raw || 0;
                             return label + ': ' + value + ' units';
                         }
-                    }
-                }
-            }
-        }
-    });
-
-    // 2. WORKING TREND GRAPH CONFIG (Proportional Scaling para laging perpekto ang alon gaya ng screenshot)
-    const liveInUse = <?php echo $p_in_use; ?> > 0 ? <?php echo $p_in_use; ?> : 20;
-    const liveClicks = <?php echo $dynamic_clicks_base; ?>;
-
-    const trendCtx = document.getElementById('trendMetricsChart').getContext('2d');
-    new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-            datasets: [
-                {
-                    label: 'Asset Use-Rate (%)',
-                    data: [
-                        Math.max(10, liveInUse * 1.5), 
-                        Math.max(10, liveInUse * 1.4), 
-                        Math.max(10, liveInUse * 1.55), 
-                        Math.max(10, liveInUse * 1.55), 
-                        Math.max(15, liveInUse * 1.95), 
-                        Math.max(20, liveInUse * 2.2), 
-                        Math.max(20, liveInUse * 2.15), 
-                        Math.max(20, liveInUse * 2.15), 
-                        Math.max(15, liveInUse * 2.05), 
-                        Math.max(15, liveInUse * 2.05), 
-                        Math.max(15, liveInUse * 2.0), 
-                        liveInUse // Oct (Kasalukuyang Tunay na Data mo)
-                    ],
-                    borderColor: '#2E073F',
-                    backgroundColor: 'rgba(46, 7, 63, 0.05)',
-                    fill: true,
-                    tension: 0.3,
-                    yAxisID: 'yPercentage',
-                    pointBackgroundColor: '#2E073F',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 1.5,
-                    pointRadius: 5
-                },
-                {
-                    label: 'Maintenance Clicks (Units)',
-                    data: [
-                        Math.round(liveClicks * 0.75), 
-                        Math.round(liveClicks * 0.66), 
-                        Math.round(liveClicks * 0.83), 
-                        Math.round(liveClicks * 0.88), 
-                        Math.round(liveClicks * 0.92), 
-                        Math.round(liveClicks * 1.06), 
-                        Math.round(liveClicks * 1.02), 
-                        Math.round(liveClicks * 0.90), 
-                        Math.round(liveClicks * 0.93), 
-                        Math.round(liveClicks * 1.0), 
-                        Math.round(liveClicks * 1.0), 
-                        liveClicks // Oct (Kasalukuyang Tunay na Data mo)
-                    ], 
-                    borderColor: '#AD49E1',
-                    backgroundColor: 'transparent',
-                    fill: false,
-                    tension: 0.3,
-                    yAxisID: 'yUnits',
-                    pointBackgroundColor: '#AD49E1',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 1.5,
-                    pointRadius: 5
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { family: 'Plus Jakarta Sans', weight: '500' } }
-                },
-                yPercentage: {
-                    type: 'linear',
-                    position: 'left',
-                    min: 0,
-                    max: 100,
-                    ticks: { 
-                        stepSize: 20,
-                        color: '#2E073F',
-                        font: { family: 'Plus Jakarta Sans', weight: '600' }
-                    },
-                    grid: { color: '#eaeaea' }
-                },
-                yUnits: {
-                    type: 'linear',
-                    position: 'right',
-                    min: 0,
-                    max: Math.round(liveClicks * 1.45),
-                    ticks: { 
-                        color: '#AD49E1',
-                        font: { family: 'Plus Jakarta Sans', weight: '600' }
-                    },
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: { 
-                        usePointStyle: true, 
-                        boxWidth: 10, 
-                        padding: 20,
-                        font: { family: 'Plus Jakarta Sans', weight: '600', size: 12 } 
                     }
                 }
             }
