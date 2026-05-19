@@ -27,7 +27,12 @@
                     </div>
                     <div class="dropdown-user-details">
                        <div class="dropdown-name"><?php echo htmlspecialchars(explode(' ', trim($display_name))[0]); ?></div>
-                        <div class="dropdown-email"><?php echo htmlspecialchars($emailname ?? 'user@example.com'); ?></div>
+                        <div class="dropdown-email">
+                             <?php 
+                         // I-display ang naka-save na username sa session
+                            echo htmlspecialchars($_SESSION['username'] ?? 'Guest'); 
+                            ?>
+</div>
                     </div>
                 </div>
                 <div class="dropdown-divider"></div>

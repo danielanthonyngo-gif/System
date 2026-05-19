@@ -28,9 +28,11 @@ if (isset($_POST['login'])) {
                 $reset->bind_param("i", $user['id']);
                 $reset->execute();
 
+                // I-set ang sessions
+                $_SESSION['username'] = $user['username']; // Dito inilagay ang username
                 $_SESSION['user'] = $user['fullname'];
                 $_SESSION['user_id'] = $user['id'];
-                $_SESSION['role'] = $user['role']; // Naka-save pa rin ito sa session para magamit mo sa ibang pages
+                $_SESSION['role'] = $user['role'];
 
                 header("Location: index.php");
                 exit(); 
@@ -56,7 +58,6 @@ if (isset($_POST['login'])) {
             }
         }
     } else {
-        // Inalis ang salitang "Role" sa error message dahil username na lang ang chine-check
         $error_msg = "Maling Username! Siguraduhing tama ang iyong ininput.";
     }
 }
