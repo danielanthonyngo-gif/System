@@ -4,64 +4,56 @@
 
     $display_name = "Guest";
     if (isset($_SESSION['user_id'])) {
-    $user_id    = $_SESSION['user_id'];
-    $user_query = mysqli_query($conn, "SELECT fullname FROM users WHERE id = '$user_id' LIMIT 1");
-    if ($row = mysqli_fetch_assoc($user_query)) {
-        $display_name = $row['fullname'];
-    }
+        $user_id    = $_SESSION['user_id'];
+        $user_query = mysqli_query($conn, "SELECT fullname FROM users WHERE id = '$user_id' LIMIT 1");
+        if ($row = mysqli_fetch_assoc($user_query)) {
+            $display_name = $row['fullname'];
+        }
     }
 
     // --- HELPER FUNCTION TO DETECT IF THE AREA IS EXISTING ---
     function is_duplicate_area($conn, $new_name) {
         $clean_name = mysqli_real_escape_string($conn, trim($new_name));
-        
-        // Mag-query sa database gamit ang LOWER() para case-insensitive ang pag-detect
         $query = mysqli_query($conn, "SELECT account_id FROM client_accounts WHERE LOWER(client_name) = LOWER('$clean_name') LIMIT 1");
-        
         return mysqli_num_rows($query) > 0;
     }
 
     // --- ADD LOGIC ---
     $error_msg = "";
     if (isset($_POST['add_area'])) {
-    $new_name = trim($_POST['area_name']);
-    $building = $_POST['building_type'];
-    
-    if (! empty($new_name)) {
-        // I-reject kung duplicate/existing na sa database
-        if (is_duplicate_area($conn, $new_name)) {
-            $error_msg = "The area '" . htmlspecialchars($new_name) . "' already exists!";
-        } else {
-            // I-map kung saang building id ipapasok (1 = Alpha, 2 = Beta)
-            $building_id = ($building == 'Alpha') ? 1 : 2;
-            $safe_name = mysqli_real_escape_string($conn, $new_name);
-            
-            // I-insert direkta sa iyong phpMyAdmin table
-            $insert_query = "INSERT INTO client_accounts (building_id, client_name, in_use_count, avail_count) VALUES ($building_id, '$safe_name', 0, 0)";
-            
-            if (mysqli_query($conn, $insert_query)) {
-                header("Location: " . $_SERVER['PHP_SELF']);
-                exit();
+        $new_name = trim($_POST['area_name']);
+        $building = $_POST['building_type'];
+        
+        if (!empty($new_name)) {
+            if (is_duplicate_area($conn, $new_name)) {
+                $error_msg = "The area '" . htmlspecialchars($new_name) . "' already exists!";
             } else {
-                $error_msg = "Database Error: " . mysqli_error($conn);
+                $building_id = ($building == 'Alpha') ? 1 : 2;
+                $safe_name = mysqli_real_escape_string($conn, $new_name);
+                
+                $insert_query = "INSERT INTO client_accounts (building_id, client_name, in_use_count, avail_count) VALUES ($building_id, '$safe_name', 0, 0)";
+                
+                if (mysqli_query($conn, $insert_query)) {
+                    header("Location: " . $_SERVER['PHP_SELF']);
+                    exit();
+                } else {
+                    $error_msg = "Database Error: " . mysqli_error($conn);
+                }
             }
         }
-    }
     }
 
     // --- DELETE LOGIC ---
     if (isset($_GET['del_id'])) {
-    $target_id = intval($_GET['del_id']); // Gamitin natin ang account_id para sa mas ligtas na pagbura sa DB
-    
-    $delete_query = "DELETE FROM client_accounts WHERE account_id = $target_id";
-    if (mysqli_query($conn, $delete_query)) {
-        // Mag-set ng session para magpakita ang Success Notif pagkatapos mag-refresh
-        $_SESSION['delete_success'] = true;
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit();
-    } else {
-        $error_msg = "Failed to delete area: " . mysqli_error($conn);
-    }
+        $target_id = intval($_GET['del_id']);
+        $delete_query = "DELETE FROM client_accounts WHERE account_id = $target_id";
+        if (mysqli_query($conn, $delete_query)) {
+            $_SESSION['delete_success'] = true;
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit();
+        } else {
+            $error_msg = "Failed to delete area: " . mysqli_error($conn);
+        }
     }
 ?>
 
@@ -77,7 +69,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <style>
-          :root {
+        :root {
             --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --accent-purple: #8e44ad;
             --bg-light: #f4f7fe;
@@ -161,17 +153,6 @@
             box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25);
         }
 
-        .status-card {
-            border: none;
-            border-radius: 25px;
-            color: white;
-            padding: 30px;
-            position: relative;
-            overflow: hidden;
-            transition: 0.3s;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        }
-
         .btn-add-area {
             background: var(--main-gradient); color: white; border: none; padding: 12px 25px; border-radius: 18px; font-weight: 700; transition: 0.3s;
             box-shadow: 0 8px 15px rgba(122, 28, 172, 0.2);
@@ -201,13 +182,20 @@
         .section-title::after { content: ""; flex-grow: 1; height: 2px; background: linear-gradient(90deg, #e2e8f0, transparent); }
 
         @media (max-width: 992px) { .content-wrapper { margin-left: 0; } }
+
+        /* Loader & Pop-up Setup */
+        .modal-loader { display: flex; justify-content: center; align-items: center; min-height: 480px; flex-direction: column; gap: 15px; color: #7A1CAC; background: #ffffff; border-radius: 16px; }
+        .premium-popup-container { background: #ffffff; border-radius: 16px; overflow: hidden; position: relative; min-height: 480px; }
+        .live-inventory-frame { width: 100%; height: 600px; border: none; display: none; border-radius: 16px; background: #ffffff; }
     </style>
 </head>
 <body>
 
-<?php include 'aside.php';
+<?php 
+    include 'aside.php';
     $title     = "VIEW AREAS";
-    $sub_title = "Location Record & Monitoring"; ?>
+    $sub_title = "Location Record & Monitoring"; 
+?>
 
 <div class="content-wrapper">
 
@@ -231,20 +219,18 @@
         <div class="section-title">ALPHA BUILDING & OTHERS</div>
         <div class="row g-4 mb-5">
             <?php 
-                // Kukunin ang mga areas mula sa database kung saan building_id ay 1 (Alpha)
                 $alpha_query = mysqli_query($conn, "SELECT * FROM client_accounts WHERE building_id = 1 ORDER BY account_id ASC");
                 while ($area = mysqli_fetch_assoc($alpha_query)):
                     $id    = $area['account_id'];
                     $name  = $area['client_name'];
                     
-                    // Live counting query mula sa 'assets' table mo
                     $res   = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '" . mysqli_real_escape_string($conn, $name) . "'");
                     $count = mysqli_fetch_assoc($res)['t'] ?? 0;
             ?>
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                 <div class="area-card text-center">
                     <a onclick="confirmDelete(<?php echo $id; ?>, '<?php echo addslashes($name); ?>')" class="delete-overlay"><i class="fas fa-times"></i></a>
-                    <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
+                    <a href="#" data-location="<?php echo htmlspecialchars($name); ?>" class="text-decoration-none view-assets-popup-trigger">
                         <div class="card-header-label"><?php echo htmlspecialchars($name); ?></div>
                         <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
                         <div class="stat-container">
@@ -260,20 +246,18 @@
         <div class="section-title">BETA BUILDING</div>
         <div class="row g-4 mb-4">
             <?php 
-                // Kukunin ang mga areas mula sa database kung saan building_id ay 2 (Beta)
                 $beta_query = mysqli_query($conn, "SELECT * FROM client_accounts WHERE building_id = 2 ORDER BY account_id ASC");
                 while ($area = mysqli_fetch_assoc($beta_query)):
                     $id    = $area['account_id'];
                     $name  = $area['client_name'];
                     
-                    // Live counting query mula sa 'assets' table mo
                     $res   = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '" . mysqli_real_escape_string($conn, $name) . "'");
                     $count = mysqli_fetch_assoc($res)['t'] ?? 0;
             ?>
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                 <div class="area-card text-center">
                     <a onclick="confirmDelete(<?php echo $id; ?>, '<?php echo addslashes($name); ?>')" class="delete-overlay"><i class="fas fa-times"></i></a>
-                    <a href="inventory_page.php?location=<?php echo urlencode($name); ?>" class="text-decoration-none">
+                    <a href="#" data-location="<?php echo htmlspecialchars($name); ?>" class="text-decoration-none view-assets-popup-trigger">
                         <div class="card-header-label"><?php echo htmlspecialchars($name); ?></div>
                         <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
                         <div class="stat-container">
@@ -285,7 +269,7 @@
             </div>
             <?php endwhile; ?>
         </div>
-</div>
+    </div>
 </div>
 
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
@@ -317,18 +301,47 @@
     </div>
 </div>
 
+<div class="modal fade" id="assetsPopModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 24px; border: none; background-color: #f8fafc; box-shadow: 0 30px 70px rgba(46, 7, 63, 0.25);">
+            <div class="modal-header border-0 px-4 pt-4 pb-2 d-flex align-items-center justify-content-between" style="background: white; border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="background: linear-gradient(135deg, rgba(122, 28, 172, 0.1) 0%, rgba(46, 7, 63, 0.1) 100%); width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #7A1CAC;">
+                        <i class="fas fa-boxes-stacked fa-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-800 m-0" style="color: #2E073F; font-size: 1.4rem; letter-spacing: -0.3px;"><span id="popModalLocationName" style="color: #7A1CAC;">AREA</span> INVENTORY</h4>
+                        <small class="text-muted fw-600" style="font-size: 0.85rem;">
+                    </div>
+                </div>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close" style="background-color: #f1f5f9; padding: 10px; border-radius: 50%; font-size: 0.75rem;"></button>
+            </div>
+            
+            <div class="modal-body p-3">
+                <div class="premium-popup-container">
+                    <div class="modal-loader" id="popWindowLoader">
+                        <div class="spinner-border" role="status" style="width: 3rem; height: 3rem; color: #7A1CAC; border-width: 4px;"></div>
+                        <span class="fw-700 text-muted mt-2">Connecting live database logs...</span>
+                    </div>
+                    <iframe id="popupLiveFrame" class="live-inventory-frame" src=""></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // FUNCTION PARA SA COMFIRMATION NOTIF BAGO MAG-DELETE
     function confirmDelete(id, areaName) {
         Swal.fire({
             title: 'Are you sure?',
             text: "You are about to delete '" + areaName + "'. This cannot be undone!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#7A1CAC', // Kulay purple para match sa theme mo
+            confirmButtonColor: '#7A1CAC', 
             cancelButtonColor: '#ff4757',
             confirmButtonText: 'Yes, delete it!',
             cancelButtonText: 'Cancel',
@@ -336,11 +349,34 @@
             borderRadius: '25px'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Pag pinindot ang Yes, itutuloy ang pag-redirect sa URL para mabura sa DB
                 window.location.href = "?del_id=" + id;
             }
         });
     }
+
+    $(document).ready(function() {
+        $('.view-assets-popup-trigger').on('click', function(e) {
+            e.preventDefault();
+            
+            let targetLocation = $(this).data('location');
+            $('#popModalLocationName').text(targetLocation.toUpperCase());
+            
+            $('#popWindowLoader').show();
+            $('#popupLiveFrame').hide();
+            
+            var assetsModal = new bootstrap.Modal(document.getElementById('assetsPopModal'));
+            assetsModal.show();
+            
+            // DITO ANG SIKRETONG FIX: Nagpasa tayo ng embed flag sa URL parameter nang hindi binabago ang inner page configurations!
+            let queryUrl = 'inventory_page.php?location=' + encodeURIComponent(targetLocation) + '&layout=embed';
+            $('#popupLiveFrame').attr('src', queryUrl);
+            
+            $('#popupLiveFrame').on('load', function() {
+                $('#popWindowLoader').hide();
+                $(this).show();
+            });
+        });
+    });
 </script>
 
 <?php if (!empty($error_msg)): ?>

@@ -17,6 +17,9 @@ $active = mysqli_fetch_assoc($active_query)['t'] ?? 0;
 $assets = mysqli_query($conn, "SELECT * FROM assets WHERE location = '$location'");
 
 $current_page = 'view_area.php'; 
+
+// TUKUYIN KUNG EMBEDDED LAYOUT (NASA LOOB NG MODAL POPUP)
+$is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
 ?>
 
 <!DOCTYPE html>
@@ -26,7 +29,6 @@ $current_page = 'view_area.php';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tracking | <?php echo htmlspecialchars($location); ?></title>
     
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -141,7 +143,7 @@ $current_page = 'view_area.php';
         /* Mobile Optimization */
         @media (max-width: 992px) {
             .content-wrapper { margin-left: 0; padding: 1rem; }
-            .glass-header { margin-top: 50px; } /* Space for mobile menu toggle */
+            .glass-header { margin-top: 50px; } 
         }
 
         @media (max-width: 576px) {
@@ -150,28 +152,48 @@ $current_page = 'view_area.php';
             .d-flex-mobile { flex-direction: column !important; }
         }
     </style>
+
+    <?php if ($is_embed): ?>
+    <style>
+        .content-wrapper { 
+            margin-left: 0 !important; 
+            padding: 15px 5px !important; 
+            min-height: auto !important;
+        }
+        body {
+            background-color: transparent !important;
+        }
+    </style>
+    <?php endif; ?>
 </head>
 <body>
 
-    <?php include 'aside.php'; ?>
+    <?php 
+        if (!$is_embed) {
+            include 'aside.php'; 
+        }
+    ?>
     
-    <div class="content-wrapper">
-        <!-- Header -->
-        <div class="glass-header">
-            <div class="header-title">
-                <h4 class="fw-800 m-0"><?php echo htmlspecialchars($location); ?> <span style="color: var(--accent-pink);">INVENTORY</span></h4>
-                <small class="text-muted d-none d-sm-block fw-600">Inspiro Relia Inc. Asset Management</small>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <div class="text-end d-none d-md-block">
-                    <div class="small fw-800" style="color: var(--accent-purple);"><?php echo $_SESSION['user'] ?? 'User'; ?></div>
-                    <a href="logout.php" class="text-decoration-none fw-bold" style="font-size: 0.65rem; color: var(--accent-pink);">SIGN OUT</a>
+    <div class="content-wrapper" style="<?php echo $is_embed ? 'margin-left: 0 !important;' : ''; ?>">
+        
+        <?php 
+            if (!$is_embed): 
+        ?>
+            <div class="glass-header">
+                <div class="header-title">
+                    <h4 class="fw-800 m-0"><?php echo htmlspecialchars($location); ?> <span style="color: var(--accent-pink);">INVENTORY</span></h4>
+                    <small class="text-muted d-none d-sm-block fw-600">Inspiro Relia Inc. Asset Management</small>
                 </div>
-                <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'] ?? 'U', 0, 1)); ?></div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end d-none d-md-block">
+                        <div class="small fw-800" style="color: var(--accent-purple);"><?php echo $_SESSION['user'] ?? 'User'; ?></div>
+                        <a href="logout.php" class="text-decoration-none fw-bold" style="font-size: 0.65rem; color: var(--accent-pink);">SIGN OUT</a>
+                    </div>
+                    <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'] ?? 'U', 0, 1)); ?></div>
+                </div>
             </div>
-        </div>
+        <?php endif; ?>
 
-        <!-- Stats -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <div class="stat-card-modern">
@@ -184,9 +206,7 @@ $current_page = 'view_area.php';
             </div>
         </div>
 
-        <!-- Main Card -->
         <div class="table-card">
-            <!-- Controls Area -->
             <div class="row g-3 mb-4 align-items-center">
                 <div class="col-12 col-xl-5">
                     <div class="search-container">
@@ -196,11 +216,6 @@ $current_page = 'view_area.php';
                 </div>
                 <div class="col-12 col-xl-7">
                     <div class="d-flex flex-wrap gap-2 justify-content-xl-end">
-                        <a href="view_area.php" class="btn btn-light border btn-action-main">
-                            <i class="fas fa-arrow-left me-2"></i>Back
-                        </a>
-
-                        <!-- Comprehensive Filter -->
                         <div class="dropdown filter-dropdown">
                             <button class="btn btn-white border dropdown-toggle btn-action-main shadow-sm" type="button" id="filterDropdown" data-bs-toggle="dropdown">
                                 <i class="fas fa-filter me-2 text-primary"></i> 
@@ -227,7 +242,6 @@ $current_page = 'view_area.php';
                 </div>
             </div>
 
-            <!-- Asset Table -->
             <div class="table-responsive">
                 <table class="table custom-table align-middle" id="assetTable">
                     <thead>
@@ -267,7 +281,6 @@ $current_page = 'view_area.php';
         </div>
     </div>
 
-    <!-- Scanner Modal -->
     <div class="modal fade" id="deployAssetModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
@@ -314,13 +327,11 @@ $current_page = 'view_area.php';
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
         let currentFilterValue = 'All';
 
-        // Instant Filter Logic
         function applyFilters() {
             let search = document.getElementById('assetSearch').value.toLowerCase();
             let rows = document.querySelectorAll('.asset-row');
@@ -357,7 +368,6 @@ $current_page = 'view_area.php';
 
         document.getElementById('assetSearch').addEventListener('keyup', applyFilters);
 
-        // Scanner Logic
         let html5QrCode;
         let isScanning = false;
         let currentFacingMode = "environment";
@@ -394,5 +404,3 @@ $current_page = 'view_area.php';
     </script>
 </body>
 </html>
-
-s
