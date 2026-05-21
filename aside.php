@@ -175,6 +175,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="audit.php" class="nav-item <?php echo ($current_page == 'audit.php') ? 'active' : ''; ?>">
             <i class="fas fa-history"></i> <span>Audit Log</span>
         </a>
+        <a href="import.php" class="nav-item <?php echo ($current_page == 'import_.php') ? 'active' : ''; ?>">
+            <i class="fas fa-file-import"></i> <span>Import</span>
+        </a>
         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
             <a href="manage_user.php" class="nav-item <?php echo ($current_page == 'manage_user.php') ? 'active' : ''; ?>">
                 <i class="fas fa-users-cog"></i> <span>Manage Users</span>
