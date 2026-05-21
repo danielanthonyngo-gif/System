@@ -49,6 +49,18 @@
             overflow-x: auto;
             max-height: 200px;
         }
+        /* Style para sa Save Button */
+        #save-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none; /* Naka-hide muna hangga't walang file */
+        }
+        #save-btn:hover { background-color: #007bb5; }
     </style>
 </head>
 <body>
@@ -70,9 +82,14 @@
 
     <h3>Raw JSON Data (Puwede mong i-save sa Database):</h3>
     <pre id="json-output">Naghihintay ng file...</pre>
+    
+    <!-- Dito idinagdag ang Save Button -->
+    <button id="save-btn">I-save ang JSON File</button>
 </div>
 
 <script>
+    let currentJsonData = null; // Variable para i-store ang data
+
     // Abangan kapag may piniling file ang user
     document.getElementById('excel-file').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -80,30 +97,35 @@
 
         const reader = new FileReader();
 
-        // Kapag nabasa na ang file bilang ArrayBuffer
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
-            
-            // Basahin ang workbook gamit ang SheetJS
             const workbook = XLSX.read(data, { type: 'array' });
-
-            // Kunin ang unang sheet (puno ng data)
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
-
-            // I-convert ang Sheet papuntang JSON format
-            // defval: "" para lagyan ng empty string ang mga blankong cell
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-            // 1. I-display ang Raw JSON data sa screen
-            document.getElementById('json-output').textContent = JSON.stringify(jsonData, null, 2);
+            // I-store sa variable para magamit ng save button
+            currentJsonData = jsonData;
 
-            // 2. I-display ang data sa HTML Table
+            document.getElementById('json-output').textContent = JSON.stringify(jsonData, null, 2);
+            document.getElementById('save-btn').style.display = 'block'; // Ipakita ang button
             displayTable(jsonData);
         };
 
-        // Simulan ang pagbasa sa file
         reader.readAsArrayBuffer(file);
+    });
+
+    // Function para sa pag-save/download ng JSON
+    document.getElementById('save-btn').addEventListener('click', function() {
+        if (!currentJsonData) return;
+        
+        const blob = new Blob([JSON.stringify(currentJsonData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'data.json';
+        a.click();
+        URL.revokeObjectURL(url);
     });
 
     // Function para gumawa ng HTML Table mula sa JSON Data
@@ -111,7 +133,6 @@
         const thead = document.querySelector('#excel-table thead');
         const tbody = document.querySelector('#excel-table tbody');
         
-        // Linisin muna ang lumang table data kung mayroon man
         thead.innerHTML = "";
         tbody.innerHTML = "";
 
@@ -120,10 +141,7 @@
             return;
         }
 
-        // Kunin ang mga Column Headers (Keys ng unang object)
         const headers = Object.keys(data[0]);
-        
-        // Gawa ng Header Row
         let headerRow = "<tr>";
         headers.forEach(header => {
             headerRow += `<th>${header}</th>`;
@@ -131,7 +149,6 @@
         headerRow += "</tr>";
         thead.innerHTML = headerRow;
 
-        // Gawa ng mga Data Rows
         data.forEach(row => {
             let bodyRow = "<tr>";
             headers.forEach(header => {
