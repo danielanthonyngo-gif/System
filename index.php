@@ -25,8 +25,8 @@ if ($result && mysqli_num_rows($result) > 0) {
 // --- ASSET TRACKING LOGIC ---
 $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
 $count_disposal = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
-$count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
-$count_storage = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='In Storage'"))['total'] ?? 0;
+$count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0; 
+$count_storage = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='in_stock'"))['total'] ?? 0; //in_stock is now "In Storage"
 
 // Kalkulahin ang total at percentages sa PHP para magamit sa mga charts
 $total_assets = $count_in_use + $count_disposal + $count_replacement + $count_storage;

@@ -46,14 +46,23 @@
     // --- DELETE LOGIC ---
     if (isset($_GET['del_id'])) {
         $target_id = intval($_GET['del_id']);
-        $delete_query = "DELETE FROM client_accounts WHERE account_id = $target_id";
-        if (mysqli_query($conn, $delete_query)) {
-            $_SESSION['delete_success'] = true;
-            header("Location: " . $_SERVER['PHP_SELF']);
-            exit();
+
+        //check mu muna kung si $target_id ay may existing assets na naka-assign dito, if yes, abort deletion and show error message
+        $check_query = "SELECT COUNT(*) as t FROM assets as a INNER JOIN client_accounts as b ON a.location = b.account_id WHERE b.account_id = $target_id";
+        $check_result = mysqli_query($conn, $check_query);
+        $row = mysqli_fetch_assoc($check_result);
+        if ($row['t'] > 0) {
+            $error_msg = "Cannot delete area with existing assets assigned.";
+        } else {
+            $delete_query = "DELETE FROM client_accounts WHERE account_id = $target_id";
+            if (mysqli_query($conn, $delete_query)) {
+                $_SESSION['delete_success'] = true;
+                header("Location: " . $_SERVER['PHP_SELF']);
+                exit();
         } else {
             $error_msg = "Failed to delete area: " . mysqli_error($conn);
         }
+    }
     }
 ?>
 
@@ -224,7 +233,7 @@
                     $id    = $area['account_id'];
                     $name  = $area['client_name'];
                     
-                    $res   = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '" . mysqli_real_escape_string($conn, $name) . "'");
+                    $res   = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets as a INNER JOIN client_accounts as b ON a.location = b.account_id WHERE b.account_id = " . intval($id));
                     $count = mysqli_fetch_assoc($res)['t'] ?? 0;
             ?>
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">
@@ -251,7 +260,7 @@
                     $id    = $area['account_id'];
                     $name  = $area['client_name'];
                     
-                    $res   = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '" . mysqli_real_escape_string($conn, $name) . "'");
+                    $res   = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets as a INNER JOIN client_accounts as b ON a.location = b.account_id WHERE b.account_id = " . intval($id));
                     $count = mysqli_fetch_assoc($res)['t'] ?? 0;
             ?>
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">

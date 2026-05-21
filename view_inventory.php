@@ -18,6 +18,8 @@
     
     $display_name = $user_data['fullname'] ?? "Angelo Vicente";
     $user_role    = $user_data['role'] ?? "OJT";
+
+    // Initialize filter variables
  
     $search        = $_GET['search'] ?? '';
     $filter_status = $_GET['status_filter'] ?? '';
@@ -81,7 +83,7 @@
         }
     }
 
-     
+     // for delete action
     if (isset($_GET['delete_id'])) {
         $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
         
@@ -399,14 +401,14 @@ $sub_title = "Asset Tracking System"; ?>
                     </thead>
                     <tbody>
                         <?php
-                            $sql = "SELECT * FROM assets WHERE 1=1";
+                            $sql = "SELECT * FROM `assets` as a LEFT JOIN client_accounts as b ON a.location=b.account_id";
                             if (! empty($filter_status)) {$f  = mysqli_real_escape_string($conn, $filter_status);
                                 $sql                          .= " AND status = '$f'";}
                             if (! empty($filter_type)) {$t  = mysqli_real_escape_string($conn, $filter_type);
                                 $sql                          .= " AND asset_type = '$t'";}
                             if (! empty($search)) {$s  = mysqli_real_escape_string($conn, $search);
                                 $sql                          .= " AND (asset_tag LIKE '%$s%' OR brand_model LIKE '%$s%' OR serial_number LIKE '%$s%')";}
-                            $sql .= " ORDER BY inventory_date DESC";
+                            $sql .= " ORDER BY a.inventory_date DESC";
                             $res = mysqli_query($conn, $sql);
 
                             while ($row = mysqli_fetch_assoc($res)):
@@ -420,7 +422,7 @@ $sub_title = "Asset Tracking System"; ?>
                                 <div class="fw-bold text-dark"><?php echo $row['brand_model']; ?></div>
                                 <div class="small text-muted">SN: <?php echo $row['serial_number']; ?></div>
                             </td>
-                            <td class="small"><?php echo $row['location']; ?></td>
+                            <td class="small"><?php echo $row['client_name']; ?></td>
                             <td><span class="status-badge <?php echo $badge; ?>"><?php echo $row['status']; ?></span></td>
 
                              <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>

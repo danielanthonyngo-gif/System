@@ -1,164 +1,278 @@
+<?php
+    ob_start();
+    session_start();
+    include 'config.php'; 
+
+    if (!isset($_SESSION['user_id'])) {
+        header("Location: login.php");
+        exit();
+    }
+
+    $current_uid = $_SESSION['user_id'];
+    $user_res    = mysqli_query($conn, "SELECT fullname, role FROM users WHERE id = '$current_uid'");
+    $user_data   = mysqli_fetch_assoc($user_res);
+    
+    $_SESSION['fullname'] = $user_data['fullname']; 
+    
+    $display_name = $user_data['fullname'] ?? "Angelo Vicente";
+    $user_role    = $user_data['role'] ?? "OJT";
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel File Importer</title>
-    <!-- Isinama natin ang SheetJS Library mula sa CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <title>Inspiro | Computer Asset Tracking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
+        :root {
+            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
+            --accent-purple: #7A1CAC;
+            --bg-light: #f4f7fe;
+            --sidebar-width: 260px;
+        }
         body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background-color: #f4f7f6;
+            background-color: var(--bg-light);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #362d36;
+            margin: 0;
         }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            max-width: 800px;
-            margin: 0 auto;
+        .content-wrapper {
+            margin-left: var(--sidebar-width);
+            padding: 35px;
+            min-height: 100vh;
         }
-        input[type="file"] {
-            margin: 20px 0;
-            padding: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #4CAF50;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        #json-output {
-            background-color: #333;
-            color: #fff;
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-            max-height: 200px;
-        }
-        /* Style para sa Save Button */
-        #save-btn {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: #008CBA;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: none; /* Naka-hide muna hangga't walang file */
-        }
-        #save-btn:hover { background-color: #007bb5; }
+        .data-panel { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+        .input-custom { border-radius: 12px; padding: 12px 15px; border: 1.5px solid #eee; background: #fafafa; font-weight: 600; font-size: 0.9rem; width: 100%; transition: 0.3s; }
+        .btn-purple { background: var(--main-gradient); color: white; border-radius: 12px; padding: 12px 20px; font-weight: 700; border: none; transition: 0.2s; }
+        .btn-purple:hover { opacity: 0.9; color: white; }
+        
+        .table-container { max-height: 500px; overflow-y: auto; border-radius: 12px; border: 1px solid #eef2f5; }
+        .status-badge { padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; display: inline-block; }
+        .st-active { background: #E9D5FF; color: #7A1CAC; }
+        .st-disposal { background: #FEE2E2; color: #DC2626; }
+        .st-replacement { background: #FEF3C7; color: #D97706; }
+        
+        .badge-dup { background-color: #ef4444; color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+        .badge-ok { background-color: #10b981; color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Excel File Importer</h2>
-    <p>Select an Excel file (.xlsx or .xls) to view its contents.</p>
-    
-    <!-- Input Button para sa File Selection -->
-    <input type="file" id="excel-file" accept=".xlsx, .xls" />
+<?php include 'aside.php';
+    $title     = "IMPORT MANAGEMENT";
+    $sub_title = "Asset Import System"; ?>
 
-    <h3>Preview ng Data (Table):</h3>
-    <div style="overflow-x: auto;">
-        <table id="excel-table">
-            <thead><!-- Dito papasok ang Headers --></thead>
-            <tbody><!-- Dito papasok ang Data Rows --></tbody>
-        </table>
-    </div>
+<div class="content-wrapper">
+     <?php include 'header.php'; ?>
 
-    <h3>Raw JSON Data (Puwede mong i-save sa Database):</h3>
-    <pre id="json-output">Naghihintay ng file...</pre>
-    
-    <!-- Dito idinagdag ang Save Button -->
-    <button id="save-btn">I-save ang JSON File</button>
+     <div class="data-panel mb-4">
+         <h4 class="fw-bold mb-3" style="color: var(--accent-purple);">Upload Asset Registry File</h4>
+         <div class="row g-3 align-items-center">
+             <div class="col-md-9">
+                 <input type="file" id="excel_file" class="form-control input-custom" accept=".xlsx, .xls, .csv">
+             </div>
+             <div class="col-md-3">
+                 <button type="button" id="btn_preview" class="btn btn-purple w-100">
+                     <i class="fa-solid fa-magnifying-glass me-2"></i>Analyze & Preview
+                 </button>
+             </div>
+         </div>
+     </div>
+
+     <div class="data-panel d-none" id="preview_panel">
+         <div class="d-flex justify-content-between align-items-center mb-3">
+             <h5 class="fw-bold m-0 text-secondary">Staging Area Preview</h5>
+             <button type="button" id="btn_import" class="btn btn-success px-4 fw-bold" style="border-radius: 10px;">
+                 <i class="fa-solid fa-cloud-arrow-up me-2"></i>Import Selected Records
+             </button>
+         </div>
+
+         <div class="table-container">
+             <table class="table table-hover align-middle mb-0">
+                 <thead class="table-light sticky-top">
+                     <tr>
+                         <th width="40" class="text-center">
+                             <input type="checkbox" id="check_all" class="form-check-input" checked>
+                         </th>
+                         <th>Import Status</th>
+                         <th>Inventory Date</th>
+                         <th>Asset Tag</th>
+                         <th>Serial Number</th>
+                         <th>Brand/Model</th>
+                         <th>Type</th>
+                         <th>Year/Model</th>
+                         <th>Location</th>
+                         <th>Asset Status</th>
+                     </tr>
+                 </thead>
+                 <tbody id="preview_tbody"></tbody>
+             </table>
+         </div>
+     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    let currentJsonData = null; // Variable para i-store ang data
+$(document).ready(function() {
+    let excelRowsData = [];
 
-    // Abangan kapag may piniling file ang user
-    document.getElementById('excel-file').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    function parseExcelDate(excelDate) {
+        if (!excelDate) return '';
+        if (!isNaN(excelDate)) {
+            const date = new Date((excelDate - 25569) * 86400000);
+            return date.toISOString().split('T')[0];
+        }
+        const parsed = new Date(excelDate);
+        if (!isNaN(parsed.getTime())) {
+            return parsed.toISOString().split('T')[0];
+        }
+        return excelDate;
+    }
 
+    $('#btn_preview').on('click', function() {
+        const fileInput = document.getElementById('excel_file');
+        if (!fileInput.files.length) {
+            Swal.fire('Error', 'Please select an Excel file first.', 'warning');
+            return;
+        }
+
+        Swal.fire({ title: 'Processing data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        const file = fileInput.files[0];
         const reader = new FileReader();
 
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            
+            excelRowsData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-            // I-store sa variable para magamit ng save button
-            currentJsonData = jsonData;
+            if (excelRowsData.length === 0) {
+                Swal.fire('Empty File', 'No valid data found in this spreadsheet.', 'error');
+                return;
+            }
 
-            document.getElementById('json-output').textContent = JSON.stringify(jsonData, null, 2);
-            document.getElementById('save-btn').style.display = 'block'; // Ipakita ang button
-            displayTable(jsonData);
+            const tagsToCheck = excelRowsData.map(r => String(r['Asset Tag'] || r['asset_tag'] || '').trim()).filter(Boolean);
+
+            $.ajax({
+                url: 'check_duplicates.php',
+                type: 'POST',
+                data: { asset_tags: tagsToCheck },
+                dataType: 'json',
+                success: function(duplicates) {
+                    Swal.close();
+                    renderPreviewTable(excelRowsData, duplicates);
+                },
+                error: function() {
+                    Swal.fire('Error', 'Failed to scan database verification registry.', 'error');
+                }
+            });
         };
-
         reader.readAsArrayBuffer(file);
     });
 
-    // Function para sa pag-save/download ng JSON
-    document.getElementById('save-btn').addEventListener('click', function() {
-        if (!currentJsonData) return;
-        
-        const blob = new Blob([JSON.stringify(currentJsonData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'data.json';
-        a.click();
-        URL.revokeObjectURL(url);
+    function renderPreviewTable(rows, duplicates) {
+        let html = '';
+        rows.forEach((row, index) => {
+            let dateVal   = parseExcelDate(row['Inventory Date'] || row['inventory_date']);
+            let tagVal    = String(row['Asset Tag'] || row['asset_tag'] || '').trim();
+            let serialVal = row['Serial Number'] || row['serial_number'] || 'N/A';
+            let brandVal  = row['Brand/Model'] || row['brand_model'] || 'N/A';
+            let typeVal   = row['Type'] || row['asset_type'] || 'N/A';
+            let yearVal   = row['Year/Model'] || row['year_model'] || 'N/A';
+            let locVal    = row['Location'] || row['location'] || 'N/A';
+            let statusVal = row['Status'] || row['status'] || 'Active';
+
+            let isDuplicate = duplicates.includes(tagVal);
+            
+            let statusClass = 'st-active';
+            if(statusVal.toLowerCase().includes('disposal')) statusClass = 'st-disposal';
+            if(statusVal.toLowerCase().includes('replacement')) statusClass = 'st-replacement';
+
+            html += `
+                <tr class="${isDuplicate ? 'table-light text-muted' : ''}">
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input row-checkbox" data-index="${index}" ${isDuplicate ? 'disabled' : 'checked'}>
+                    </td>
+                    <td>
+                        ${isDuplicate ? '<span class="badge-dup"><i class="fa-solid fa-ban me-1"></i> Duplicate</span>' : '<span class="badge-ok"><i class="fa-solid fa-check me-1"></i> Valid</span>'}
+                    </td>
+                    <td>${dateVal}</td>
+                    <td class="fw-bold text-dark">${tagVal}</td>
+                    <td><code>${serialVal}</code></td>
+                    <td>${brandVal}</td>
+                    <td>${typeVal}</td>
+                    <td>${yearVal}</td>
+                    <td>${locVal}</td>
+                    <td><span class="status-badge ${statusClass}">${statusVal}</span></td>
+                </tr>
+            `;
+        });
+
+        $('#preview_tbody').html(html);
+        $('#preview_panel').removeClass('d-none');
+    }
+
+    $('#check_all').on('change', function() {
+        $('.row-checkbox:not(:disabled)').prop('checked', this.checked);
     });
 
-    // Function para gumawa ng HTML Table mula sa JSON Data
-    function displayTable(data) {
-        const thead = document.querySelector('#excel-table thead');
-        const tbody = document.querySelector('#excel-table tbody');
-        
-        thead.innerHTML = "";
-        tbody.innerHTML = "";
+    $('#btn_import').on('click', function() {
+        let selectedRecords = [];
 
-        if (data.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='100%'>Walang laman o walang data ang file.</td></tr>";
+        $('.row-checkbox:checked').each(function() {
+            let idx = $(this).data('index');
+            let originalRow = excelRowsData[idx];
+
+            selectedRecords.push({
+                inventory_date: parseExcelDate(originalRow['Inventory Date'] || originalRow['inventory_date']),
+                asset_tag: String(originalRow['Asset Tag'] || originalRow['asset_tag'] || '').trim(),
+                serial_number: originalRow['Serial Number'] || originalRow['serial_number'] || '',
+                brand_model: originalRow['Brand/Model'] || originalRow['brand_model'] || '',
+                asset_type: originalRow['Type'] || originalRow['asset_type'] || '',
+                year_model: originalRow['Year/Model'] || originalRow['year_model'] || '',
+                location: originalRow['Location'] || originalRow['location'] || '',
+                status: originalRow['Status'] || originalRow['status'] || 'Active'
+            });
+        });
+
+        if (selectedRecords.length === 0) {
+            Swal.fire('No selection', 'Please mark at least one valid row to process.', 'info');
             return;
         }
 
-        const headers = Object.keys(data[0]);
-        let headerRow = "<tr>";
-        headers.forEach(header => {
-            headerRow += `<th>${header}</th>`;
-        });
-        headerRow += "</tr>";
-        thead.innerHTML = headerRow;
+        Swal.fire({ title: 'Writing entries...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-        data.forEach(row => {
-            let bodyRow = "<tr>";
-            headers.forEach(header => {
-                bodyRow += `<td>${row[header]}</td>`;
-            });
-            bodyRow += "</tr>";
-            tbody.insertAdjacentHTML('beforeend', bodyRow);
+        $.ajax({
+            url: 'process_import.php',
+            type: 'POST',
+            data: { assets: JSON.stringify(selectedRecords) },
+            dataType: 'json',
+            success: function(res) {
+                if(res.status === 'success') {
+                    Swal.fire('Success', res.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Database Error', res.message, 'error');
+                }
+            },
+            error: function() {
+                Swal.fire('Network Error', 'The system encountered an engine execution error.', 'error');
+            }
         });
-    }
+    });
+});
 </script>
-
 </body>
 </html>
