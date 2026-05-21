@@ -41,6 +41,10 @@ $total_maintenance = $count_replacement + $count_disposal;
 // Dynamic Base para sa Maintenance Graph para sumunod ang alon sa kasalukuyang bilang ng maintenance assets
 $dynamic_clicks_base = $total_maintenance > 0 ? ($total_maintenance * 15) : ($total_assets * 5);
 if($dynamic_clicks_base < 100) { $dynamic_clicks_base = 1050; } // Fallback para maganda pa rin ang alon kung walang laman ang DB
+
+// --- RECENT AUDIT LOGS FOR DASHBOARD ---
+$recent_logs_query = "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 5";
+$recent_logs_result = mysqli_query($conn, $recent_logs_query);
 ?>
 
 <!DOCTYPE html>
@@ -166,6 +170,21 @@ if($dynamic_clicks_base < 100) { $dynamic_clicks_base = 1050; } // Fallback para
             height: 100%;
         }
 
+        /* Audit Badges Styles pulled from audit.php */
+        .badge-action {
+            padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.7rem;
+            display: inline-block; text-align: center;
+        }
+        .badge-create { background: #d1fae5; color: #065f46; }
+        .badge-update { background: #dbeafe; color: #1e40af; }
+        .badge-delete { background: #fee2e2; color: #991b1b; }
+        .badge-login { background: #fef3c7; color: #92400e; }
+        .badge-lock { background: #2E073F; color: white; }
+        .badge-default { background: #f3f4f6; color: #374151; }
+
+        .table thead th { color: #a3aed0; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 15px 20px; border-bottom: 1px solid #f1f1f7; }
+        .table tbody td { padding: 15px 20px; color: #2b3674; font-weight: 600; font-size: 0.85rem; vertical-align: middle; }
+
         @media (max-width: 992px) {
             .content-wrapper { margin-left: 0; padding: 20px; }
             .glass-header-container { padding: 20px; border-radius: 20px; }
@@ -176,14 +195,11 @@ if($dynamic_clicks_base < 100) { $dynamic_clicks_base = 1050; } // Fallback para
 
 <?php include 'aside.php';
     $title     = "Dashboard";
-$sub_title = "Asset Record & Monitoring"; ?>
-
-
+    $sub_title = "Asset Record & Monitoring"; ?>
 
 <div class="content-wrapper">
   <?php include 'header.php'; ?>
     
-
     <div class="container-fluid p-0">
         <div class="row g-4 mb-4">
             <div class="col-md-3">
@@ -217,11 +233,83 @@ $sub_title = "Asset Record & Monitoring"; ?>
         </div>
 
         <div class="row g-4">
-            <div class="col-12">
+            <!-- Pie Chart Card -->
+            <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
                     <h5 class="fw-bold mb-4" style="color: #2E073F;">Asset Distribution Breakdown</h5>
-                    <div style="height: 500px;">
+                    <div style="height: 400px;">
                         <canvas id="assetPieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Logs Card -->
+            <div class="col-xl-6 col-lg-12">
+                <div class="chart-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold m-0" style="color: #2E073F;">Recent System Activities</h5>
+                        <a href="audit.php" class="btn btn-sm btn-light rounded-pill px-3 fw-bold text-uppercase small" style="color: #7A1CAC;">View All</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Entity</th>
+                                    <th>Date & Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                while ($row = mysqli_fetch_assoc($recent_logs_result)): 
+                                    $badge_class = 'badge-default';
+                                    $action_lower = strtolower($row['action']);
+                                    if (strpos($action_lower, 'add') !== false || strpos($action_lower, 'create') !== false) {
+                                        $badge_class = 'badge-create';
+                                    } elseif (strpos($action_lower, 'edit') !== false || strpos($action_lower, 'update') !== false) {
+                                        $badge_class = 'badge-update';
+                                    } elseif (strpos($action_lower, 'delete') !== false) {
+                                        $badge_class = 'badge-delete';
+                                    } elseif (strpos($action_lower, 'login') !== false) {
+                                        $badge_class = 'badge-login';
+                                    } elseif (strpos($action_lower, 'lock') !== false || strpos($action_lower, 'unlock') !== false) {
+                                        $badge_class = 'badge-lock';
+                                    }
+                                ?>
+                                    <tr>
+                                        <td>
+                                            <div class="fw-600 text-truncate" style="max-width: 130px;"><?php echo htmlspecialchars($row['user_fullname']); ?></div>
+                                        </td>
+                                        <td>
+                                            <span class="badge-action <?php echo $badge_class; ?>">
+                                                <?php echo ucfirst(htmlspecialchars($row['action'])); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php if($row['entity_type']): ?>
+                                                <span class="small"><strong><?php echo ucfirst(htmlspecialchars($row['entity_type'])); ?></strong></span>
+                                            <?php else: ?>
+                                                <span class="text-muted small">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <div class="small"><?php echo date('M d, Y', strtotime($row['created_at'])); ?></div>
+                                            <small class="text-muted" style="font-size: 11px;"><?php echo date('h:i:s A', strtotime($row['created_at'])); ?></small>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                                
+                                <?php if(mysqli_num_rows($recent_logs_result) == 0): ?>
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5">
+                                            <i class="fas fa-history fa-2x text-muted mb-2 d-block"></i>
+                                            <h6 class="text-muted small">No recent activities found</h6>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -272,8 +360,7 @@ $sub_title = "Asset Record & Monitoring"; ?>
                     callbacks: {
                         label: function(context) {
                             let label = context.label.split(':')[0] || '';
-                            let value = context.raw || 0;
-                            return label + ': ' + value + ' units';
+                            return label + ': ' + context.raw;
                         }
                     }
                 }

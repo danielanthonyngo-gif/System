@@ -19,8 +19,6 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 
-
-
 // Handle filter and pagination
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -133,14 +131,10 @@ $users_result = mysqli_query($conn, $users_query);
         }
         .view-details-btn:hover { background: #7A1CAC; color: white; }
 
-        .json-preview {
-            max-width: 300px; overflow: hidden; text-overflow: ellipsis;
-            white-space: nowrap; font-size: 0.75rem; color: #6c757d;
-        }
-
-        /* Modal styles */
         .modal-content { border-radius: 30px; border: none; }
         .modal-header { background: var(--main-gradient); color: white; border-radius: 30px 30px 0 0; padding: 20px 25px; }
+        .modal-detail-table th { background-color: #f8f9fa; color: #5a6a85; font-size: 0.8rem; text-transform: uppercase; }
+        .modal-detail-table td { font-size: 0.85rem; word-break: break-all; }
 
         @media (max-width: 992px) {
             .main-content { margin-left: 0; padding: 20px; }
@@ -158,12 +152,10 @@ $users_result = mysqli_query($conn, $users_query);
         include 'header.php';
     ?>
 
-    <!-- Filter Section -->
     <div class="filter-card">
         <form method="GET" action="audit.php" class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label fw-600 small">Search</label>
-                <!-- DITO PO BINAGO YUNG PLACEHOLDER: Name, Action, IP... -->
                 <input type="text" name="search" class="form-control" placeholder="Name, Action, IP..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
             </div>
             <div class="col-md-2">
@@ -211,7 +203,6 @@ $users_result = mysqli_query($conn, $users_query);
         </form>
     </div>
 
-    <!-- Audit Logs Table -->
     <div class="table-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h5 class="fw-800 m-0" style="color: #2E073F;">
@@ -232,11 +223,10 @@ $users_result = mysqli_query($conn, $users_query);
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Entity</th>
-                        <th>IP Address</th>
                         <th>Date & Time</th>
+                        <th>Action</th>
+                        <th>Item</th>
+                        <th>User</th>
                         <th class="text-center">Details</th>
                     </tr>
                 </thead>
@@ -257,33 +247,69 @@ $users_result = mysqli_query($conn, $users_query);
                         } elseif (strpos($action_lower, 'lock') !== false || strpos($action_lower, 'unlock') !== false) {
                             $badge_class = 'badge-lock';
                         }
+
+                        // ========================================================
+                        // ADVANCED MULTI-KEY JSON PARSER FOR ASSET TYPE
+                        // ========================================================
+                        $display_item = ucfirst($row['entity_type']); 
+                        $entity_lower = strtolower($row['entity_type']);
+
+                        // Tinitingnan muna ang 'new_data' sapagkat andun ang pinakabagong update, sunod ang 'old_data'
+                        $json_payload = !empty($row['new_data']) ? $row['new_data'] : (!empty($row['old_data']) ? $row['old_data'] : '');
+                        $decoded = json_decode($json_payload, true);
+
+                        if ($decoded && is_array($decoded)) {
+                            if ($entity_lower === 'asset' || $entity_lower === 'computer asset' || strpos($action_lower, 'asset') !== false) {
+                                // Dynamic Scanning cascading chain order (Para sigurado salo ang Monitor, Printer, atbp.)
+                                if (isset($decoded['asset_type']) && !empty($decoded['asset_type'])) {
+                                    $display_item = $decoded['asset_type'];
+                                } elseif (isset($decoded['category']) && !empty($decoded['category'])) {
+                                    $display_item = $decoded['category'];
+                                } elseif (isset($decoded['type']) && !empty($decoded['type'])) {
+                                    $display_item = $decoded['type'];
+                                } elseif (isset($decoded['device_type']) && !empty($decoded['device_type'])) {
+                                    $display_item = $decoded['device_type'];
+                                } elseif (isset($decoded['item_name']) && !empty($decoded['item_name'])) {
+                                    $display_item = $decoded['item_name'];
+                                } elseif (isset($decoded['asset_name']) && !empty($decoded['asset_name'])) {
+                                    $display_item = $decoded['asset_name'];
+                                }
+                            } elseif ($entity_lower === 'user' || $entity_lower === 'users') {
+                                if (isset($decoded['fullname'])) {
+                                    $display_item = $decoded['fullname'];
+                                } elseif (isset($decoded['username'])) {
+                                    $display_item = $decoded['username'];
+                                }
+                            }
+                        }
+                        // ========================================================
                     ?>
                         <tr>
                             <td class="text-muted small"><?php echo $counter++; ?></td>
-                            <td>
-                                <div class="fw-600"><?php echo htmlspecialchars($row['user_fullname']); ?></div>
-                                <small class="text-muted">ID: <?php echo $row['user_id']; ?></small>
-                            </td>
-                            <td>
-                                <span class="badge-action <?php echo $badge_class; ?>">
-                                    <?php echo ucfirst(htmlspecialchars($row['action'])); ?>
-                                </span>
-                            </td>
-                            <td>
-                                <?php if($row['entity_type']): ?>
-                                    <strong><?php echo ucfirst(htmlspecialchars($row['entity_type'])); ?></strong>
-                                    <?php if($row['entity_id']): ?>
-                                        <br><small class="text-muted">ID: <?php echo $row['entity_id']; ?></small>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <span class="text-muted">—</span>
-                                <?php endif; ?>
-                            </td>
-                            <td><code class="small"><?php echo htmlspecialchars($row['ip_address']); ?></code></td>
+                            
                             <td>
                                 <div><?php echo date('M d, Y', strtotime($row['created_at'])); ?></div>
                                 <small class="text-muted"><?php echo date('h:i:s A', strtotime($row['created_at'])); ?></small>
                             </td>
+
+                            <td>
+                                <span class="badge-action <?php echo $badge_class; ?>">
+                                    <?php echo htmlspecialchars($row['action']); ?>
+                                </span>
+                            </td>
+
+                            <td>
+                                <strong class="text-dark" style="font-size: 0.9rem;"><?php echo htmlspecialchars($display_item); ?></strong>
+                                <?php if($row['entity_id']): ?>
+                                    <br><small class="text-muted text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.3px;">Asset ID: <?php echo $row['entity_id']; ?></small>
+                                <?php endif; ?>
+                            </td>
+
+                            <td>
+                                <div class="fw-600"><?php echo htmlspecialchars($row['user_fullname']); ?></div>
+                                <small class="text-muted">ID: <?php echo $row['user_id']; ?></small>
+                            </td>
+
                             <td class="text-center">
                                 <button class="view-details-btn" onclick="viewDetails(<?php echo htmlspecialchars(json_encode($row)); ?>)">
                                     <i class="fas fa-eye"></i> View
@@ -294,7 +320,7 @@ $users_result = mysqli_query($conn, $users_query);
                     
                     <?php if(mysqli_num_rows($result) == 0): ?>
                         <tr>
-                            <td colspan="7" class="text-center py-5">
+                            <td colspan="6" class="text-center py-5">
                                 <i class="fas fa-history fa-3x text-muted mb-3 d-block"></i>
                                 <h6 class="text-muted">No audit logs found</h6>
                             </td>
@@ -304,7 +330,6 @@ $users_result = mysqli_query($conn, $users_query);
             </table>
         </div>
         
-        <!-- Pagination -->
         <?php if($total_pages > 1): ?>
         <div class="d-flex justify-content-between align-items-center mt-4">
             <div class="text-muted small">Showing <?php echo $offset + 1; ?> to <?php echo min($offset + $limit, $total_rows); ?> of <?php echo $total_rows; ?> entries</div>
@@ -319,7 +344,7 @@ $users_result = mysqli_query($conn, $users_query);
                         </li>
                     <?php endfor; ?>
                     <li class="page-item <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $page+1; ?>&limit=<?php echo $limit; ?><?php echo isset($_GET['search']) ? '&search='.$_GET['search'] : ''; ?><?php echo isset($_GET['action']) ? '&action='.$_GET['action'] : ''; ?><?php echo isset($_GET['user_id']) ? '&user_id='.$_GET['user_id'] : ''; ?>">Next</a>
+                        <a class="page-link" href="?page=?page=<?php echo $page+1; ?>&limit=<?php echo $limit; ?><?php echo isset($_GET['search']) ? '&search='.$_GET['search'] : ''; ?><?php echo isset($_GET['action']) ? '&action='.$_GET['action'] : ''; ?><?php echo isset($_GET['user_id']) ? '&user_id='.$_GET['user_id'] : ''; ?>">Next</a>
                     </li>
                 </ul>
             </nav>
@@ -328,7 +353,6 @@ $users_result = mysqli_query($conn, $users_query);
     </div>
 </div>
 
-<!-- Details Modal -->
 <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -337,8 +361,7 @@ $users_result = mysqli_query($conn, $users_query);
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4" id="modalContent">
-                <!-- Content will be inserted here -->
-            </div>
+                </div>
             <div class="modal-footer border-0 p-4 pt-0">
                 <button type="button" class="btn btn-light rounded-3 fw-700" data-bs-dismiss="modal">Close</button>
             </div>
@@ -351,62 +374,75 @@ $users_result = mysqli_query($conn, $users_query);
 function viewDetails(data) {
     const modalBody = document.getElementById('modalContent');
     
-    let oldDataHtml = '<span class="text-muted">No data</span>';
-    let newDataHtml = '<span class="text-muted">No data</span>';
+    let oldObj = {};
+    let newObj = {};
     
-    if (data.old_data && data.old_data !== 'null') {
-        try {
-            let parsed = JSON.parse(data.old_data);
-            oldDataHtml = '<pre class="bg-light p-3 rounded" style="font-size: 12px;">' + JSON.stringify(parsed, null, 2) + '</pre>';
-        } catch(e) {
-            oldDataHtml = '<div class="bg-light p-3 rounded">' + escapeHtml(data.old_data) + '</div>';
-        }
+    try { if(data.old_data) oldObj = JSON.parse(data.old_data); } catch(e) { oldObj = { "raw_data": data.old_data }; }
+    try { if(data.new_data) newObj = JSON.parse(data.new_data); } catch(e) { newObj = { "raw_data": data.new_data }; }
+    
+    let allKeys = Array.from(new Set([...Object.keys(oldObj), ...Object.keys(newObj)]));
+    
+    let tableRowsHtml = '';
+    if (allKeys.length === 0) {
+        tableRowsHtml = `<tr><td colspan="3" class="text-center text-muted py-3">No specific fields captured.</td></tr>`;
+    } else {
+        allKeys.forEach(key => {
+            let valOld = oldObj[key] !== undefined ? oldObj[key] : '—';
+            let valNew = newObj[key] !== undefined ? newObj[key] : '—';
+            
+            if(typeof valOld === 'object') valOld = JSON.stringify(valOld);
+            if(typeof valNew === 'object') valNew = JSON.stringify(valNew);
+            
+            let isChanged = (valOld !== valNew && valOld !== '—' && valNew !== '—');
+            let rowStyle = isChanged ? 'style="background-color: #fff9db;"' : '';
+            
+            tableRowsHtml += `
+                <tr ${rowStyle}>
+                    <td class="fw-bold text-secondary" style="font-family: monospace;">${escapeHtml(key)}</td>
+                    <td class="text-danger">${escapeHtml(valOld)}</td>
+                    <td class="text-success">${escapeHtml(valNew)}</td>
+                </tr>
+            `;
+        });
     }
-    
-    if (data.new_data && data.new_data !== 'null') {
-        try {
-            let parsed = JSON.parse(data.new_data);
-            newDataHtml = '<pre class="bg-light p-3 rounded" style="font-size: 12px;">' + JSON.stringify(parsed, null, 2) + '</pre>';
-        } catch(e) {
-            newDataHtml = '<div class="bg-light p-3 rounded">' + escapeHtml(data.new_data) + '</div>';
-        }
-    }
-    
+
     modalBody.innerHTML = `
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="text-muted small text-uppercase mb-1">User</label>
+        <div class="row mb-4 bg-light p-3 rounded mx-1">
+            <div class="col-md-4 mb-2 mb-md-0">
+                <label class="text-muted small text-uppercase d-block mb-1">User Who Moved</label>
                 <div class="fw-600">${escapeHtml(data.user_fullname)}</div>
                 <small class="text-muted">User ID: ${data.user_id}</small>
             </div>
-            <div class="col-md-6">
-                <label class="text-muted small text-uppercase mb-1">Action</label>
+            <div class="col-md-4 mb-2 mb-md-0">
+                <label class="text-muted small text-uppercase d-block mb-1">Action & Target Entity</label>
                 <div><strong>${escapeHtml(data.action)}</strong></div>
+                <small class="text-muted">${data.entity_type ? ucfirst(escapeHtml(data.entity_type)) : '—'} (ID: ${data.entity_id || 'N/A'})</small>
+            </div>
+            <div class="col-md-4">
+                <label class="text-muted small text-uppercase d-block mb-1">Timestamp & Traceability</label>
+                <div class="small fw-600">${new Date(data.created_at).toLocaleString()}</div>
+                <span class="badge bg-danger mt-1 text-white p-1 px-2" style="font-size: 0.75rem; font-family: monospace; display: inline-block;">
+                    <i class="fas fa-network-wired me-1"></i> IP ADDRESS: ${escapeHtml(data.ip_address)}
+                </span>
             </div>
         </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="text-muted small text-uppercase mb-1">Entity</label>
-                <div>${data.entity_type ? ucfirst(escapeHtml(data.entity_type)) : '—'}</div>
-                ${data.entity_id ? '<small class="text-muted">ID: ' + data.entity_id + '</small>' : ''}
-            </div>
-            <div class="col-md-6">
-                <label class="text-muted small text-uppercase mb-1">Date & Time</label>
-                <div>${new Date(data.created_at).toLocaleString()}</div>
-                <small class="text-muted">IP: ${escapeHtml(data.ip_address)}</small>
-            </div>
+
+        <div class="fw-bold mb-2 text-dark" style="font-size: 0.95rem;">
+            <i class="fas fa-exchange-alt me-1 text-primary"></i> Modified Properties Table:
         </div>
-        <div class="row mb-3">
-            <div class="col-12">
-                <label class="text-muted small text-uppercase mb-1">Old Data</label>
-                ${oldDataHtml}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                <label class="text-muted small text-uppercase mb-1">New Data</label>
-                ${newDataHtml}
-            </div>
+        <div class="table-responsive rounded-3 border">
+            <table class="table modal-detail-table table-bordered align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th width="30%">Field Property</th>
+                        <th width="35%">Old Value</th>
+                        <th width="35%">New Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHtml}
+                </tbody>
+            </table>
         </div>
     `;
     
@@ -414,13 +450,14 @@ function viewDetails(data) {
 }
 
 function escapeHtml(text) {
-    if (!text) return '';
+    if (text === null || text === undefined) return '';
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = String(text);
     return div.innerHTML;
 }
 
 function ucfirst(str) {
+    if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 </script>
