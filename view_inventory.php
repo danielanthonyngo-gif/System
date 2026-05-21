@@ -357,16 +357,26 @@ $sub_title = "Asset Tracking System"; ?>
                 </form>
             </div>
             <div class="col-md-5 text-end">
-                <button class="btn p-3 px-4 rounded-4 fw-bold me-2" 
-                style="background-color: #6f42c1; color: #ffffff !important; border: none;" 
-                data-bs-toggle="modal" 
-                data-bs-target="#createItemModal">
-                <i class="fas fa-plus me-2"></i>New Asset
-                </button>
-                <button onclick="exportInventoryPDF()" class="btn btn-dark p-3 px-4 rounded-4 fw-bold">
-                    <i class="fas fa-file-pdf me-2"></i>Export PDF
-                </button>
-            </div>
+    <button class="btn p-3 px-4 rounded-4 fw-bold me-2" 
+            style="background-color: #6f42c1; color: #ffffff !important; border: none;" 
+            data-bs-toggle="modal" 
+            data-bs-target="#createItemModal">
+        <i class="fas fa-plus me-2"></i>New Asset
+    </button>
+
+    <div class="dropdown d-inline-block">
+        <button class="btn btn-dark p-3 px-4 rounded-4 fw-bold dropdown-toggle" 
+                type="button" 
+                data-bs-toggle="dropdown" 
+                aria-expanded="false">
+            <i class="fas fa-file-export me-2"></i>Export
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+            <li><a class="dropdown-item" href="#" onclick="exportInventoryPDF()"><i class="fas fa-file-pdf me-2 text-danger"></i>Export as PDF</a></li>
+            <li><a class="dropdown-item" href="#" onclick="exportCSV()"><i class="fas fa-file-csv me-2 text-success"></i>Export as CSV</a></li>
+        </ul>
+    </div>
+</div>
         </div>
 
         <div id="table-to-export">
@@ -647,6 +657,25 @@ $sub_title = "Asset Tracking System"; ?>
     const urlParams = new URLSearchParams(window.location.search);
     if(urlParams.get('msg') === 'success_create') Swal.fire({ icon: 'success', title: 'Asset Added!', showConfirmButton: false, timer: 1500 });
     if(urlParams.get('msg') === 'success_update') Swal.fire({ icon: 'success', title: 'Record Updated!', showConfirmButton: false, timer: 1500 });
+
+    function exportCSV() {
+    let csv = [];
+    let rows = document.querySelectorAll("#table-to-export table tr");
+    for (let i = 0; i < rows.length; i++) {
+        let row = [], cols = rows[i].querySelectorAll("td, th");
+        for (let j = 0; j < cols.length; j++) {
+            if (cols[j].classList.contains('no-export')) continue;
+            row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+        }
+        csv.push(row.join(","));
+    }
+    let blob = new Blob([csv.join("\n")], { type: 'text/csv' });
+    let url = window.URL.createObjectURL(blob);
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = "Inventory_Data.csv";
+    a.click();
+}
 </script>
 
 <script>
