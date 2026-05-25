@@ -1,38 +1,35 @@
 <?php
     ob_start();
     session_start();
-    include 'config.php'; 
+    include 'config.php';
 
-     
     if (! isset($_SESSION['user_id'])) {
-        header("Location: login.php");
-        exit();
+    header("Location: login.php");
+    exit();
     }
 
-    
     $current_uid = $_SESSION['user_id'];
     $user_res    = mysqli_query($conn, "SELECT fullname, role FROM users WHERE id = '$current_uid'");
     $user_data   = mysqli_fetch_assoc($user_res);
-    
-    $_SESSION['fullname'] = $user_data['fullname']; // Add this for audit
-    
+
+    $_SESSION['fullname'] = $user_data['fullname'];  
+
     $display_name = $user_data['fullname'] ?? "Angelo Vicente";
     $user_role    = $user_data['role'] ?? "OJT";
 
     // Initialize filter variables
- 
+
     $search        = $_GET['search'] ?? '';
     $filter_status = $_GET['status_filter'] ?? '';
     $filter_type   = $_GET['type_filter'] ?? '';
 
     // Fetch Client Accounts for Dropdown
     $client_accounts_query = mysqli_query($conn, "SELECT account_id, client_name FROM client_accounts ORDER BY client_name ASC");
-    $client_accounts = [];
+    $client_accounts       = [];
     while ($ca = mysqli_fetch_assoc($client_accounts_query)) {
-    $client_accounts[] = $ca;
-}
+        $client_accounts[] = $ca;
+    }
 
-    
     if (isset($_POST['update_asset'])) {
         $asset_id = mysqli_real_escape_string($conn, $_POST['asset_id']);
         $tag      = mysqli_real_escape_string($conn, $_POST['asset_tag']);
@@ -40,28 +37,26 @@
         $model    = mysqli_real_escape_string($conn, $_POST['brand_model']);
         $location = mysqli_real_escape_string($conn, $_POST['location']); // This is now an ID
         $status   = mysqli_real_escape_string($conn, $_POST['status']);
-        
-      
+
         $old_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$asset_id'");
-        $old_data = mysqli_fetch_assoc($old_query);
-        
+        $old_data  = mysqli_fetch_assoc($old_query);
+
         $update_query = "UPDATE assets SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
-        
+
         if (mysqli_query($conn, $update_query)) {
-             
+
             logAudit($conn, 'UPDATE_ASSET', 'asset', $asset_id, $old_data, [
-                'asset_tag' => $tag,
+                'asset_tag'     => $tag,
                 'serial_number' => $serial,
-                'brand_model' => $model,
-                'location' => $location,
-                'status' => $status
+                'brand_model'   => $model,
+                'location'      => $location,
+                'status'        => $status,
             ]);
             header("Location: view_inventory.php?msg=success_update");
             exit();
         }
     }
 
-   
     if (isset($_POST['save_asset'])) {
         $serial    = mysqli_real_escape_string($conn, $_POST['serial_number']);
         $model     = mysqli_real_escape_string($conn, $_POST['brand_model']);
@@ -72,40 +67,39 @@
         $asset_tag = ! empty($_POST['manual_tag']) ? mysqli_real_escape_string($conn, $_POST['manual_tag']) : "AST-" . strtoupper(substr($type, 0, 1)) . "-" . rand(1000, 9999);
 
         $insert = "INSERT INTO assets (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
-        
+
         if (mysqli_query($conn, $insert)) {
             $new_asset_id = mysqli_insert_id($conn);
-          
+
             logAudit($conn, 'ADD_ASSET', 'asset', $new_asset_id, null, [
                 'inventory_date' => $date,
-                'asset_tag' => $asset_tag,
-                'serial_number' => $serial,
-                'brand_model' => $model,
-                'asset_type' => $type,
-                'location' => $loc,
-                'status' => $status
+                'asset_tag'      => $asset_tag,
+                'serial_number'  => $serial,
+                'brand_model'    => $model,
+                'asset_type'     => $type,
+                'location'       => $loc,
+                'status'         => $status,
             ]);
             header("Location: view_inventory.php?msg=success_create");
             exit();
         }
     }
 
-     // for delete action
+    // for delete action
     if (isset($_GET['delete_id'])) {
         $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
-        
-     
+
         $delete_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$delete_id'");
-        $asset_data = mysqli_fetch_assoc($delete_query);
-        
+        $asset_data   = mysqli_fetch_assoc($delete_query);
+
         if (mysqli_query($conn, "DELETE FROM assets WHERE id='$delete_id'")) {
-           
+
             logAudit($conn, 'DELETE_ASSET', 'asset', $delete_id, $asset_data, null);
             header("Location: view_inventory.php?msg=success_delete");
             exit();
         }
     }
- 
+
     $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
     $count_disposal    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
     $count_active      = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
@@ -269,133 +263,46 @@
         .input-custom { border-radius: 12px; padding: 12px 15px; border: 1.5px solid #eee; background: #fafafa; font-weight: 600; font-size: 0.9rem; width: 100%; transition: 0.3s; }
         .input-custom:focus { border-color: var(--inspiro-purple); outline: none; background: #fff; }
         .form-label-custom { font-weight: 700; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; display: block; }
-
-
-         .glass-header-container {
-            background: white;
-            border-radius: 35px;
-            padding: 25px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
-            margin-bottom: 40px;
-            width: 100%;
-        }
-
-        .header-title-section h2 {
-            color: var(--accent-purple);
-            font-weight: 700;
-            font-size: 1.6rem;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .header-title-section p {
-            color: #a3aed0;
-            margin: 0;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        .user-nav-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-info-text { text-align: right; }
-
-        .user-name-top {
-            color: #2E073F;
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0;
-        }
-
-        .sign-out-link {
-            color: #AD49E1;
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-
-        .profile-avatar-pill {
-            width: 55px; height: 55px;
-            background: var(--main-gradient);
-            color: white;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.4rem;
-            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25);
-        }
     </style>
 </head>
 <body>
 
 <?php include 'aside.php';
     $title     = "INVENTORY MANAGEMENT";
-$sub_title = "Asset Tracking System"; ?>
+    $sub_title = "Asset Tracking System"; ?>
 
 <div class="content-wrapper">
-    <!-- Header -->
-    <!-- <div class="glass-header">
-        <div>
-            <h4 class="fw-800 mb-0" style="color:var(--inspiro-purple)"></h4>
-            <p class="text-muted small mb-0">Inspiro Relia Inc. Asset Tracking System</p>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            <div class="text-end">
-                <div class="fw-bold text-dark small"><?php echo htmlspecialchars($display_name); ?></div>
-                <a href="logout.php" class="text-decoration-none small fw-bold" style="color:var(--inspiro-purple)">Logout</a>
-            </div>
-            <div style="width:45px; height:45px; background:var(--inspiro-purple); color:white; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800;">
-                <?php echo strtoupper(substr($display_name, 0, 1)); ?>
-            </div>
-        </div>
-    </div> -->
-
      <?php include 'header.php'; ?>
 
-    <!-- Quick Stats -->
     <div class="row g-3 mb-4">
         <div class="col-md-4"><div class="metric-card d-flex justify-content-between align-items-center"><span class="text-muted fw-bold small">ACTIVE</span><span class="metric-val text-primary"><?php echo $count_active; ?></span></div></div>
         <div class="col-md-4"><div class="metric-card d-flex justify-content-between align-items-center"><span class="text-muted fw-bold small">REPLACEMENT</span><span class="metric-val text-warning"><?php echo $count_replacement; ?></span></div></div>
         <div class="col-md-4"><div class="metric-card d-flex justify-content-between align-items-center"><span class="text-muted fw-bold small">FOR DISPOSAL</span><span class="metric-val text-danger"><?php echo $count_disposal; ?></span></div></div>
     </div>
 
-    <!-- Main Table Panel -->
     <div class="data-panel">
         <div class="row g-3 mb-4 align-items-center">
             <div class="col-md-7">
                 <form method="GET" id="filterForm" class="d-flex gap-3">
-                    <!-- Search bar -->
-                   <div class="position-relative">
-    <input type="text" name="search" class="form-control border-0 bg-light p-3 ps-5 rounded-4 shadow-sm"
-           placeholder="Search Tag, Model, or Serial..." value="<?php echo htmlspecialchars($search); ?>">
+                    <div class="position-relative">
+                        <input type="text" name="search" class="form-control border-0 bg-light p-3 ps-5 rounded-4 shadow-sm"
+                            placeholder="Search Tag, Model, or Serial..." value="<?php echo htmlspecialchars($search); ?>">
 
-    <!-- QR Scan Button -->
-    <button type="button" class="btn btn-light position-absolute top-50 end-0 translate-middle-y me-2 rounded-circle d-flex align-items-center justify-content-center"
-            style="width: 38px; height: 38px; background: #f0f0f0; border: none; cursor: pointer;"
-            id="qrScanBtn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect>
-            <line x1="8" y1="9" x2="16" y2="9"></line>
-            <line x1="8" y1="13" x2="16" y2="13"></line>
-            <line x1="8" y1="17" x2="13" y2="17"></line>
-        </svg>
-    </button>
-</div>
+                        <button type="button" class="btn btn-light position-absolute top-50 end-0 translate-middle-y me-2 rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 38px; height: 38px; background: #f0f0f0; border: none; cursor: pointer;"
+                                id="qrScanBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect>
+                                <line x1="8" y1="9" x2="16" y2="9"></line>
+                                <line x1="8" y1="13" x2="16" y2="13"></line>
+                                <line x1="8" y1="17" x2="13" y2="17"></line>
+                            </svg>
+                        </button>
+                    </div>
 
                     <input type="hidden" name="status_filter" id="status_filter_input" value="<?php echo $filter_status; ?>">
                     <input type="hidden" name="type_filter" id="type_filter_input" value="<?php echo $filter_type; ?>">
 
-                    <!-- IMAGE-STYLE PURPLE DROPDOWN -->
                     <div class="dropdown filter-dropdown">
                         <button class="btn btn-filter dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
                             <i class="fas fa-filter text-primary"></i>
@@ -420,28 +327,27 @@ $sub_title = "Asset Tracking System"; ?>
                 </form>
             </div>
             <div class="col-md-5 text-end">
-    <button class="btn p-3 px-4 rounded-4 fw-bold me-2" 
-            style="background-color: #6f42c1; color: #ffffff !important; border: none;" 
-            data-bs-toggle="modal" 
-            data-bs-target="#createItemModal">
-        <i class="fas fa-plus me-2"></i>New Asset
-    </button>
+            <button class="btn p-3 px-4 rounded-4 fw-bold me-2"
+                    style="background-color: #6f42c1; color: #ffffff !important; border: none;"
+                    data-bs-toggle="modal"
+                    data-bs-target="#createItemModal">
+                <i class="fas fa-plus me-2"></i>New Asset
+            </button>
 
-    <div class="dropdown d-inline-block">
-        <button class="btn btn-dark p-3 px-4 rounded-4 fw-bold dropdown-toggle" 
-                type="button" 
-                data-bs-toggle="dropdown" 
-                aria-expanded="false">
-            <i class="fas fa-file-export me-2"></i>Export
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-            <li><a class="dropdown-item" href="#" onclick="exportInventoryPDF()"><i class="fas fa-file-pdf me-2 text-danger"></i>Export as PDF</a></li>
-            <li><a class="dropdown-item" href="#" onclick="exportCSV()"><i class="fas fa-file-csv me-2 text-success"></i>Export as CSV</a></li>
-        </ul>
-    </div>
-</div>
+            <div class="dropdown d-inline-block">
+                <button class="btn btn-dark p-3 px-4 rounded-4 fw-bold dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                    <i class="fas fa-file-export me-2"></i>Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                    <li><a class="dropdown-item" href="#" onclick="exportInventoryPDF()"><i class="fas fa-file-pdf me-2 text-danger"></i>Export as PDF</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportCSV()"><i class="fas fa-file-csv me-2 text-success"></i>Export as CSV</a></li>
+                </ul>
+            </div>
         </div>
-
+    
         <div id="table-to-export">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -456,37 +362,40 @@ $sub_title = "Asset Tracking System"; ?>
                              <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
                             <th class="no-export text-center">ACTION</th>
                             <?php endif; ?>
-
-
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                             $sql = "SELECT * FROM `assets` as a LEFT JOIN client_accounts as b ON a.location=b.account_id";
                             if (! empty($filter_status)) {$f  = mysqli_real_escape_string($conn, $filter_status);
-                                $sql                          .= " AND status = '$f'";}
+                                $sql          .= " AND status = '$f'";}
                             if (! empty($filter_type)) {$t  = mysqli_real_escape_string($conn, $filter_type);
-                                $sql                          .= " AND asset_type = '$t'";}
+                                $sql          .= " AND asset_type = '$t'";}
                             if (! empty($search)) {$s  = mysqli_real_escape_string($conn, $search);
-                                $sql                          .= " AND (asset_tag LIKE '%$s%' OR brand_model LIKE '%$s%' OR serial_number LIKE '%$s%')";}
+                                $sql          .= " AND (asset_tag LIKE '%$s%' OR brand_model LIKE '%$s%' OR serial_number LIKE '%$s%')";}
                             $sql .= " ORDER BY a.inventory_date DESC";
                             $res = mysqli_query($conn, $sql);
 
                             while ($row = mysqli_fetch_assoc($res)):
-                                $badge  = ($row['status'] == 'For Disposal') ? 'st-disposal' : (($row['status'] == 'Replacement') ? 'st-replacement' : 'st-active');
+                                $badge = ($row['status'] == 'For Disposal') ? 'st-disposal' : (($row['status'] == 'Replacement') ? 'st-replacement' : 'st-active');
                         ?>
                         <tr>
                             <td class="small fw-600"><?php echo date('M d, Y', strtotime($row['inventory_date'])); ?></td>
                             <td><span class="badge bg-light text-dark fw-bold border"><?php echo $row['asset_tag']; ?></span></td>
                                 <td>
-                                <button class="btn btn-sm btn-outline-primary border-0 view-qr-btn"
-                                    data-tag="<?php echo $row['asset_tag']; ?>"
-                                    data-serial="<?php echo $row['serial_number']; ?>"
-                                    data-model="<?php echo $row['brand_model']; ?>"
-                                    data-qr="TAG: <?php echo $row['asset_tag']; ?> | SN: <?php echo $row['serial_number']; ?>">
-                                    <i class="fas fa-qrcode"></i>
-                                </button>
-                            </td>
+                                    <button class="btn btn-sm btn-outline-primary border-0 view-qr-btn" id="view-qr-btn-<?php echo $row['id']; ?>"
+                                        data-tag="<?php echo $row['asset_tag']; ?>"
+                                        data-serial="<?php echo $row['serial_number']; ?>"
+                                        data-model="<?php echo $row['brand_model']; ?>"
+                                        data-date="<?php echo date('M d, Y', strtotime($row['inventory_date'])); ?>"
+                                        data-type="<?php echo $row['asset_type']; ?>"
+                                        data-year="<?php echo $row['year_model']; ?>"
+                                        data-loc="<?php echo htmlspecialchars($row['client_name']); ?>"
+                                        data-status="<?php echo $row['status']; ?>"
+                                        data-qr="TAG: <?php echo $row['asset_tag']; ?> | TYPE: <?php echo $row['asset_type']; ?> | MODEL: <?php echo $row['brand_model']; ?> (<?php echo $row['year_model']; ?>) | SN: <?php echo $row['serial_number']; ?> | LOC: <?php echo htmlspecialchars($row['client_name']); ?> | STATUS: <?php echo $row['status']; ?> | DATE: <?php echo $row['inventory_date']; ?>">
+                                        <i class="fas fa-qrcode"></i>
+                                    </button>
+                                </td>
                             <td>
                                 <div class="fw-bold text-dark"><?php echo $row['brand_model']; ?></div>
                                 <div class="small text-muted">SN: <?php echo $row['serial_number']; ?></div>
@@ -501,11 +410,11 @@ $sub_title = "Asset Tracking System"; ?>
                                 data-tag="<?php echo $row['asset_tag']; ?>"
                                 data-serial="<?php echo $row['serial_number']; ?>"
                                 data-model="<?php echo $row['brand_model']; ?>"
-                                data-loc="<?php echo $row['location']; ?>" 
+                                data-loc="<?php echo $row['location']; ?>"
                                 data-status="<?php echo $row['status']; ?>">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            
+
                             <button class="btn btn-sm btn-outline-danger border-0 ms-1 deleteBtn"
                                 data-id="<?php echo $row['id']; ?>"
                                 data-tag="<?php echo $row['asset_tag']; ?>">
@@ -522,7 +431,6 @@ $sub_title = "Asset Tracking System"; ?>
     </div>
 </div>
 
-<!-- Modal: New Asset (With Real-time QR) -->
 <div class="modal fade" id="createItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
@@ -596,7 +504,6 @@ $sub_title = "Asset Tracking System"; ?>
     </div>
 </div>
 
-<!-- Modal: Update Asset -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
@@ -608,23 +515,6 @@ $sub_title = "Asset Tracking System"; ?>
                         <label class="form-label-custom">Asset Tag (Read Only)</label>
                         <input type="text" name="asset_tag" id="edit_tag" class="input-custom" readonly style="background:#f0f0f0;">
                     </div>
-                    <!-- QR View Modal -->
-                    <div class="modal fade" id="qrViewModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-sm modal-dialog-centered">
-                    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                        <div class="modal-body text-center p-4">
-                            <h6 class="fw-bold mb-3" style="color: #7A1CAC;">QR CODE</h6>
-                            <div class="bg-white p-3 rounded-4 shadow-sm mb-3">
-                                <canvas id="qrViewCanvas"></canvas>
-                            </div>
-                            <p class="mb-1"><strong id="qrViewTag"></strong></p>
-                            <p class="text-muted small mb-1" id="qrViewModel"></p>
-                            <p class="text-muted small" id="qrViewSN"></p>
-                            <button type="button" class="btn btn-secondary rounded-4 mt-2" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
                     <div class="col-md-6">
                         <label class="form-label-custom">Serial Number</label>
                         <input type="text" name="serial_number" id="edit_serial" class="input-custom" required>
@@ -661,7 +551,23 @@ $sub_title = "Asset Tracking System"; ?>
     </div>
 </div>
 
-<!-- QR Scanner Modal -->
+<div class="modal fade" id="qrViewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-4">
+                <h6 class="fw-bold mb-3" style="color: #7A1CAC;">QR CODE</h6>
+                <div class="bg-white p-3 rounded-4 shadow-sm mb-3">
+                    <canvas id="qrViewCanvas"></canvas>
+                </div>
+                <p class="mb-1"><strong id="qrViewTag"></strong></p>
+                <p class="text-muted small mb-1" id="qrViewModel"></p>
+                <p class="text-muted small" id="qrViewSN"></p>
+                <button type="button" class="btn btn-secondary rounded-4 mt-2" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4">
@@ -682,7 +588,6 @@ $sub_title = "Asset Tracking System"; ?>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
@@ -692,37 +597,40 @@ $sub_title = "Asset Tracking System"; ?>
         if (type === 'type') document.getElementById('type_filter_input').value = value;
         document.getElementById('filterForm').submit();
     }
-        // Delete Button
-        $('.deleteBtn').on('click', function() {
-            var assetId = $(this).data('id');
-            var assetTag = $(this).data('tag');
-            
-            Swal.fire({
-                title: 'Delete Asset?',
-                text: "Are you sure you want to delete " + assetTag + "? This cannot be undone.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'view_inventory.php?delete_id=' + assetId;
-                }
-            });
+    
+    // Delete Button
+    $('.deleteBtn').on('click', function() {
+        var assetId = $(this).data('id');
+        var assetTag = $(this).data('tag');
+
+        Swal.fire({
+            title: 'Delete Asset?',
+            text: "Are you sure you want to delete " + assetTag + "? This cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'view_inventory.php?delete_id=' + assetId;
+            }
         });
-        // 2. GENERATE TABLE QR CODES
+    });
+    
+    // 2. GENERATE TABLE QR CODES
     function generateTableQRs() {
         document.querySelectorAll('.table-qr').forEach(canvas => {
-            new QRious({ 
-                element: canvas, 
-                value: canvas.getAttribute('data-value'), 
+            new QRious({
+                element: canvas,
+                value: canvas.getAttribute('data-value'),
                 size: 80,
                 level: 'M'
             });
         });
     }
+    
     // 3. REAL-TIME QR PREVIEW IN MODAL
     function updateModalQR() {
         const tag = document.getElementById('in_tag').value || "AST-PREVIEW";
@@ -746,11 +654,11 @@ $sub_title = "Asset Tracking System"; ?>
         $('#edit_tag').val($(this).data('tag'));
         $('#edit_serial').val($(this).data('serial'));
         $('#edit_model').val($(this).data('model'));
-        
+
         // Set the dropdown selection based on the stored ID
         var storedLocId = $(this).data('loc');
         $('#edit_loc').val(storedLocId); // This selects the correct option in the dropdown
-        
+
         $('#edit_status').val($(this).data('status'));
         new bootstrap.Modal(document.getElementById('editModal')).show();
     });
@@ -794,50 +702,87 @@ $sub_title = "Asset Tracking System"; ?>
     if(urlParams.get('msg') === 'success_update') Swal.fire({ icon: 'success', title: 'Record Updated!', showConfirmButton: false, timer: 1500 });
 
     function exportCSV() {
-    let csv = [];
-    let rows = document.querySelectorAll("#table-to-export table tr");
-    for (let i = 0; i < rows.length; i++) {
-        let row = [], cols = rows[i].querySelectorAll("td, th");
-        for (let j = 0; j < cols.length; j++) {
-            if (cols[j].classList.contains('no-export')) continue;
-            row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+        let csv = [];
+        let rows = document.querySelectorAll("#table-to-export table tr");
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll("td, th");
+            for (let j = 0; j < cols.length; j++) {
+                if (cols[j].classList.contains('no-export')) continue;
+                row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+            }
+            csv.push(row.join(","));
         }
-        csv.push(row.join(","));
+        let blob = new Blob([csv.join("\n")], { type: 'text/csv' });
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = "Inventory_Data.csv";
+        a.click();
     }
-    let blob = new Blob([csv.join("\n")], { type: 'text/csv' });
-    let url = window.URL.createObjectURL(blob);
-    let a = document.createElement("a");
-    a.href = url;
-    a.download = "Inventory_Data.csv";
-    a.click();
 
-                // 6. QR VIEW BUTTON
-        $(document).on('click', '.view-qr-btn', function(e) {
-            e.preventDefault();
-            
-            var tag = $(this).data('tag');
-            var sn = $(this).data('serial');
-            var model = $(this).data('model');
-            var qrValue = $(this).data('qr');
-            
-            // Update modal content
-            $('#qrViewTag').text(tag);
-            $('#qrViewModel').text(model);
-            $('#qrViewSN').text('SN: ' + sn);
-            
-            // Generate QR on the canvas
-            var canvas = document.getElementById('qrViewCanvas');
-            new QRious({
-                element: canvas,
-                value: qrValue,
-                size: 200,
-                level: 'H'
-            });
-            
-            // Now show the modal
-            $('#qrViewModal').modal('show');
-        });
-            
+    // 6. QR VIEW BUTTON (Updated with e.currentTarget fix)
+    // $(document).on('click', '.view-qr-btn', function(e) {
+    //     e.preventDefault();
+    //     var $btn = $(e.currentTarget);
+    //     var tag = $btn.data('tag');
+    //     var sn = $btn.data('serial');
+    //     var model = $btn.data('model');
+    //     var qrValue = $btn.data('qr');
+
+    //     // Update modal content
+    //     $('#qrViewTag').text(tag);
+    //     $('#qrViewModel').text(model);
+    //     $('#qrViewSN').text('SN: ' + sn);
+
+    //     // Generate QR on the canvas
+    //     var canvas = document.getElementById('qrViewCanvas');
+    //     new QRious({
+    //         element: canvas,
+    //         value: qrValue,
+    //         size: 200,
+    //         level: 'H'
+    //     });
+
+    //     // Now show the modal
+    //     $('#qrViewModal').modal('show');
+    // });
+
+   $(document).on('click', '.view-qr-btn', function(e) {
+    e.preventDefault();
+    var $btn = $(e.currentTarget);
+    
+   
+    var tag = $btn.data('tag');
+    var sn = $btn.data('serial');
+    var model = $btn.data('model');
+    var date = $btn.data('date');
+    var type = $btn.data('type');
+    var year = $btn.data('year');
+    var loc = $btn.data('loc');
+    var status = $btn.data('status');
+    var qrValue = $btn.data('qr');  
+    
+    $('#qrViewTag').text(tag);
+    $('#qrViewModel').text(model + (year ? ' (' + year + ')' : ''));
+    $('#qrViewSN').text('SN: ' + sn);
+    
+    
+    $('#qrViewType').text(type);
+    $('#qrViewLoc').text(loc);
+    $('#qrViewStatus').text(status);
+
+    
+    var canvas = document.getElementById('qrViewCanvas');
+    new QRious({
+        element: canvas,
+        value: qrValue,
+        size: 220,  
+        level: 'H'  
+    });
+
+    // Now show the modal
+    $('#qrViewModal').modal('show');
+});
 
     $(document).on('hidden.bs.modal', '#qrViewModal', function() {
         // Clear QR when modal closes
@@ -845,14 +790,6 @@ $sub_title = "Asset Tracking System"; ?>
         var ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
-
-    // Handle click on QR button
-    $(document).on('click', '.view-qr-btn', function() {
-        $(this).addClass('active');
-    });
-}
-    
-    
 </script>
 
 <script>
@@ -884,22 +821,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     searchInput.value = decodedText;
 
-
                     const event = new Event('input', { bubbles: true });
                     searchInput.dispatchEvent(event);
-
 
                     const form = searchInput.closest('form');
                     if (form) {
                         form.submit();
                     }
 
-
                     if (html5QrCode && html5QrCode.isScanning) {
                         html5QrCode.stop();
                     }
                     qrScannerModal.hide();
-
 
                     const resultsDiv = document.getElementById('qr-reader-results');
                     resultsDiv.innerHTML = '<div class="alert alert-success">✓ QR Code scanned: ' + decodedText + '</div>';
@@ -908,7 +841,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 2000);
                 },
                 (errorMessage) => {
-
                     console.log(errorMessage);
                 }
             ).catch(err => {
@@ -917,7 +849,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }, 500);
     });
-
 
     document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function() {
         if (html5QrCode && html5QrCode.isScanning) {
