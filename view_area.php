@@ -19,29 +19,36 @@
     }
 
     // --- ADD LOGIC ---
-    $error_msg = "";
-    if (isset($_POST['add_area'])) {
-        $new_name = trim($_POST['area_name']);
-        $building = $_POST['building_type'];
-        
-        if (!empty($new_name)) {
-            if (is_duplicate_area($conn, $new_name)) {
-                $error_msg = "The area '" . htmlspecialchars($new_name) . "' already exists!";
-            } else {
-                $building_id = ($building == 'Alpha') ? 1 : 2;
-                $safe_name = mysqli_real_escape_string($conn, $new_name);
-                
-                $insert_query = "INSERT INTO client_accounts (building_id, client_name, in_use_count, avail_count) VALUES ($building_id, '$safe_name', 0, 0)";
-                
-                if (mysqli_query($conn, $insert_query)) {
-                    header("Location: " . $_SERVER['PHP_SELF']);
-                    exit();
+        $error_msg = "";
+
+        if (isset($_POST['add_area'])) {
+            $new_name = trim($_POST['area_name']);
+            $building = $_POST['building_type'];
+
+            if (!empty($new_name)) {
+                if (is_duplicate_area($conn, $new_name)) {
+                    $error_msg = "The area " . htmlspecialchars($new_name) . " already exists!";
                 } else {
-                    $error_msg = "Database Error: " . mysqli_error($conn);
+                    $building_id = ($building == 'Alpha') ? 1 : 2;
+                    $safe_name = mysqli_real_escape_string($conn, $new_name);
+                    $insert_query = "INSERT INTO client_accounts (building_id, client_name, in_use_count, avail_count) VALUES ($building_id, '$safe_name', 0, 0)";
+
+                    if (mysqli_query($conn, $insert_query)) {
+                        $new_id = mysqli_insert_id($conn);
+                        $newData = [
+                            'account_id'   => $new_id,
+                            'building_id'  => $building_id,
+                            'client_name'  => $new_name
+                        ];
+                        logAudit($conn, 'ADD_AREA', 'area', $new_id, null, $newData);
+                        header("Location: view_area.php?msg=success_add");
+                        exit();
+                    } else {
+                        $error_msg = "Database Error: " . mysqli_error($conn);
+                    }
                 }
             }
         }
-    }
 
     // --- DELETE LOGIC ---
     if (isset($_GET['del_id'])) {
@@ -54,10 +61,15 @@
         if ($row['t'] > 0) {
             $error_msg = "Cannot delete area with existing assets assigned.";
         } else {
+            $targetData = mysqli_query($conn, "SELECT * FROM client_accounts WHERE account_id = $target_id LIMIT 1  ");
+            $rowTarget = mysqli_fetch_assoc($targetData);
             $delete_query = "DELETE FROM client_accounts WHERE account_id = $target_id";
             if (mysqli_query($conn, $delete_query)) {
                 $_SESSION['delete_success'] = true;
                 header("Location: " . $_SERVER['PHP_SELF']);
+               
+                logAudit($conn, 'DELETE_AREA', 'area', $target_id, $rowTarget, null);
+            header("Location: view_area.php?msg=success_delete");
                 exit();
         } else {
             $error_msg = "Failed to delete area: " . mysqli_error($conn);
