@@ -9,8 +9,12 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-if (isset($_POST['assets'])) {
-    $assets = json_decode($_POST['assets'], true);
+// Read raw body stream directly to bypass max_input_vars parameters limit completely
+$rawPayload = file_get_contents('php://input');
+$requestData = json_decode($rawPayload, true);
+
+if (isset($requestData['assets']) && is_array($requestData['assets'])) {
+    $assets = $requestData['assets'];
     $inserted = 0;
     $skipped = 0;
 
@@ -25,14 +29,21 @@ if (isset($_POST['assets'])) {
             $type     = mysqli_real_escape_string($conn, trim($item['asset_type']));
             $year     = mysqli_real_escape_string($conn, trim($item['year_model']));
             $location = mysqli_real_escape_string($conn, trim($item['location']));
-            $status   = mysqli_real_escape_string($conn, trim($item['status']));
+            
+            $rawStatus = strtolower(trim($item['status']));
+            $status = 'Active';
+            if (strpos($rawStatus, 'disposal') !== false) {
+                $status = 'For Disposal';
+            } elseif (strpos($rawStatus, 'replacement') !== false) {
+                $status = 'Replacement';
+            }
 
             if (empty($tag)) {
                 $skipped++;
                 continue;
             }
 
-            // Safety check in case duplicates exist inside the sheet itself
+            // Database inline lookup confirmation module 
             $dup_check = mysqli_query($conn, "SELECT id FROM assets WHERE asset_tag = '$tag' LIMIT 1");
             if (mysqli_num_rows($dup_check) > 0) {
                 $skipped++;
@@ -52,7 +63,7 @@ if (isset($_POST['assets'])) {
         mysqli_commit($conn);
         echo json_encode([
             'status' => 'success',
-            'message' => "Successfully uploaded {$inserted} items! (Skipped {$skipped} row variations)"
+            'message' => "Successfully uploaded {$inserted} items! (Skipped {$skipped} matching duplicate records)"
         ]);
 
     } catch (Exception $e) {
@@ -60,5 +71,5 @@ if (isset($_POST['assets'])) {
         echo json_encode(['status' => 'error', 'message' => 'Transaction aborted: ' . $e->getMessage()]);
     }
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'Missing valid payload pipeline parameters.']);
+    echo json_encode(['status' => 'error', 'message' => 'Missing valid payload parameters or empty file context source.']);
 }

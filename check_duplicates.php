@@ -2,12 +2,17 @@
 include 'config.php';
 session_start();
 
+header('Content-Type: application/json');
 $duplicates = [];
 
-if (isset($_POST['asset_tags']) && is_array($_POST['asset_tags'])) {
+// Read raw body stream directly to bypass post parameter limitations
+$rawPayload = file_get_contents('php://input');
+$requestData = json_decode($rawPayload, true);
+
+if (isset($requestData['asset_tags']) && is_array($requestData['asset_tags'])) {
     $tags = array_map(function($t) use ($conn) {
         return mysqli_real_escape_string($conn, trim($t));
-    }, $_POST['asset_tags']);
+    }, $requestData['asset_tags']);
 
     $tags = array_filter($tags);
 

@@ -109,7 +109,7 @@
                          <th>Brand/Model</th>
                          <th>Type</th>
                          <th>Year/Model</th>
-                         <th>Location</th>
+                         <th>Company/Location ID</th>
                          <th>Asset Status</th>
                      </tr>
                  </thead>
@@ -164,12 +164,14 @@ $(document).ready(function() {
                 return;
             }
 
-            const tagsToCheck = excelRowsData.map(r => String(r['Asset Tag'] || r['asset_tag'] || '').trim()).filter(Boolean);
+            const tagsToCheck = excelRowsData.map(r => String(r['ASSET_TAG'] || r['Asset Tag'] || '').trim()).filter(Boolean);
 
+            // Fetch duplicates using application/json to prevent post parameter overhead limits
             $.ajax({
                 url: 'check_duplicates.php',
                 type: 'POST',
-                data: { asset_tags: tagsToCheck },
+                contentType: 'application/json',
+                data: JSON.stringify({ asset_tags: tagsToCheck }),
                 dataType: 'json',
                 success: function(duplicates) {
                     Swal.close();
@@ -186,14 +188,21 @@ $(document).ready(function() {
     function renderPreviewTable(rows, duplicates) {
         let html = '';
         rows.forEach((row, index) => {
-            let dateVal   = parseExcelDate(row['Inventory Date'] || row['inventory_date']);
-            let tagVal    = String(row['Asset Tag'] || row['asset_tag'] || '').trim();
-            let serialVal = row['Serial Number'] || row['serial_number'] || 'N/A';
-            let brandVal  = row['Brand/Model'] || row['brand_model'] || 'N/A';
-            let typeVal   = row['Type'] || row['asset_type'] || 'N/A';
-            let yearVal   = row['Year/Model'] || row['year_model'] || 'N/A';
-            let locVal    = row['Location'] || row['location'] || 'N/A';
-            let statusVal = row['Status'] || row['status'] || 'Active';
+            let dateVal   = parseExcelDate(row['INVENTORY_DATE'] || row['Inventory Date']);
+            let tagVal    = String(row['ASSET_TAG'] || row['Asset Tag'] || '').trim();
+            let serialVal = row['SERIAL_NUMBER'] || row['Serial Number'] || 'N/A';
+            let brandVal  = row['BRAND'] || row['Brand/Model'] || 'N/A';
+            let typeVal   = row['TYPE'] || row['Type'] || 'N/A';
+            let yearVal   = row['YEAR_MODEL'] || row['Year/Model'] || 'N/A';
+            
+            let companyText = String(row['COMPANY'] || row['Location'] || '').trim().toLowerCase();
+            let mappedLocation = "1"; 
+            if(companyText.includes('infocom')) mappedLocation = "1";
+            if(companyText.includes('inspiro')) mappedLocation = "2";
+
+            let statusVal = row['STATUS'] || row['Status'] || 'Active';
+
+            if (!tagVal || tagVal === "undefined" || tagVal === "") return;
 
             let isDuplicate = duplicates.includes(tagVal);
             
@@ -215,7 +224,7 @@ $(document).ready(function() {
                     <td>${brandVal}</td>
                     <td>${typeVal}</td>
                     <td>${yearVal}</td>
-                    <td>${locVal}</td>
+                    <td><strong>${mappedLocation === "1" ? "1 (Infocom)" : "2 (Inspiro)"}</strong></td>
                     <td><span class="status-badge ${statusClass}">${statusVal}</span></td>
                 </tr>
             `;
@@ -236,15 +245,20 @@ $(document).ready(function() {
             let idx = $(this).data('index');
             let originalRow = excelRowsData[idx];
 
+            let companyText = String(originalRow['COMPANY'] || originalRow['Location'] || '').trim().toLowerCase();
+            let finalLocation = "1";
+            if(companyText.includes('infocom')) finalLocation = "1";
+            if(companyText.includes('inspiro')) finalLocation = "2";
+
             selectedRecords.push({
-                inventory_date: parseExcelDate(originalRow['Inventory Date'] || originalRow['inventory_date']),
-                asset_tag: String(originalRow['Asset Tag'] || originalRow['asset_tag'] || '').trim(),
-                serial_number: originalRow['Serial Number'] || originalRow['serial_number'] || '',
-                brand_model: originalRow['Brand/Model'] || originalRow['brand_model'] || '',
-                asset_type: originalRow['Type'] || originalRow['asset_type'] || '',
-                year_model: originalRow['Year/Model'] || originalRow['year_model'] || '',
-                location: originalRow['Location'] || originalRow['location'] || '',
-                status: originalRow['Status'] || originalRow['status'] || 'Active'
+                inventory_date: parseExcelDate(originalRow['INVENTORY_DATE'] || originalRow['Inventory Date']),
+                asset_tag: String(originalRow['ASSET_TAG'] || originalRow['Asset Tag'] || '').trim(),
+                serial_number: originalRow['SERIAL_NUMBER'] || originalRow['Serial Number'] || '',
+                brand_model: originalRow['BRAND'] || originalRow['Brand/Model'] || '',
+                asset_type: originalRow['TYPE'] || originalRow['Type'] || '',
+                year_model: originalRow['YEAR_MODEL'] || originalRow['Year/Model'] || '',
+                location: finalLocation,
+                status: originalRow['STATUS'] || originalRow['Status'] || 'Active'
             });
         });
 
@@ -255,10 +269,12 @@ $(document).ready(function() {
 
         Swal.fire({ title: 'Writing entries...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
+        // Stream JSON directly to completely bypass max_input_vars limit warnings
         $.ajax({
             url: 'process_import.php',
             type: 'POST',
-            data: { assets: JSON.stringify(selectedRecords) },
+            contentType: 'application/json',
+            data: JSON.stringify({ assets: selectedRecords }),
             dataType: 'json',
             success: function(res) {
                 if(res.status === 'success') {
