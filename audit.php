@@ -9,6 +9,18 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Administrator') {
 
 include 'config.php';
 
+// ========================================================
+// FETCH CLIENT NAMES FROM client_accounts TABLE FOR MAPPING
+// ========================================================
+// Live na hinihigop ang account_id at client_name mula sa database master
+$loc_query = mysqli_query($conn, "SELECT account_id, client_name FROM client_accounts");
+$location_map = [];
+if ($loc_query) {
+    while($loc = mysqli_fetch_assoc($loc_query)) {
+        $location_map[$loc['account_id']] = $loc['client_name'];
+    }
+}
+
 $loggedInUser = "Guest";
 if (isset($_SESSION['user_id'])) {
     $u_id = $_SESSION['user_id'];
@@ -55,7 +67,7 @@ $total_rows = mysqli_fetch_assoc($count_result)['total'];
 $total_pages = ceil($total_rows / $limit);
 
 // Get audit logs
-$query = "SELECT * FROM audit_log  $where_clause ORDER BY created_at DESC LIMIT $offset, $limit";
+$query = "SELECT * FROM audit_log $where_clause ORDER BY created_at DESC LIMIT $offset, $limit";
 $result = mysqli_query($conn, $query);
 
 // Get distinct actions for filter dropdown
@@ -248,19 +260,15 @@ $users_result = mysqli_query($conn, $users_query);
                             $badge_class = 'badge-lock';
                         }
 
-                        // ========================================================
-                        // ADVANCED MULTI-KEY JSON PARSER FOR ASSET TYPE
-                        // ========================================================
                         $display_item = ucfirst($row['entity_type']); 
                         $entity_lower = strtolower($row['entity_type']);
 
-                        // Tinitingnan muna ang 'new_data' sapagkat andun ang pinakabagong update, sunod ang 'old_data'
-                        $json_payload = !empty($row['new_data']) ? $row['new_data'] : (!empty($row['old_data']) ? $row['old_data'] : '');
+                        // Binabasa natin ang JSON payload kung saan nakatabi ang lumang data lalo na kapag na-delete
+                        $json_payload = !empty($row['old_data']) ? $row['old_data'] : (!empty($row['new_data']) ? $row['new_data'] : '');
                         $decoded = json_decode($json_payload, true);
 
                         if ($decoded && is_array($decoded)) {
                             if ($entity_lower === 'asset' || $entity_lower === 'computer asset' || strpos($action_lower, 'asset') !== false) {
-                                // Dynamic Scanning cascading chain order (Para sigurado salo ang Monitor, Printer, atbp.)
                                 if (isset($decoded['asset_type']) && !empty($decoded['asset_type'])) {
                                     $display_item = $decoded['asset_type'];
                                 } elseif (isset($decoded['category']) && !empty($decoded['category'])) {
@@ -280,9 +288,16 @@ $users_result = mysqli_query($conn, $users_query);
                                 } elseif (isset($decoded['username'])) {
                                     $display_item = $decoded['username'];
                                 }
+                            } 
+                            // ========================================================
+                            // SASALUHIN NITO ANG GALAW NG MGA AREA / CLIENT ACCOUNTS
+                            // ========================================================
+                            elseif ($entity_lower === 'client_accounts' || $entity_lower === 'client_account' || $entity_lower === 'client accounts') {
+                                if (isset($decoded['client_name']) && !empty($decoded['client_name'])) {
+                                    $display_item = $decoded['client_name'];
+                                }
                             }
                         }
-                        // ========================================================
                     ?>
                         <tr>
                             <td class="text-muted small"><?php echo $counter++; ?></td>
@@ -301,7 +316,7 @@ $users_result = mysqli_query($conn, $users_query);
                             <td>
                                 <strong class="text-dark" style="font-size: 0.9rem;"><?php echo htmlspecialchars($display_item); ?></strong>
                                 <?php if($row['entity_id']): ?>
-                                    <br><small class="text-muted text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.3px;">Asset ID: <?php echo $row['entity_id']; ?></small>
+                                    <br><small class="text-muted text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.3px;">ID: <?php echo $row['entity_id']; ?></small>
                                 <?php endif; ?>
                             </td>
 
@@ -344,7 +359,7 @@ $users_result = mysqli_query($conn, $users_query);
                         </li>
                     <?php endfor; ?>
                     <li class="page-item <?php echo $page >= $total_pages ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=?page=<?php echo $page+1; ?>&limit=<?php echo $limit; ?><?php echo isset($_GET['search']) ? '&search='.$_GET['search'] : ''; ?><?php echo isset($_GET['action']) ? '&action='.$_GET['action'] : ''; ?><?php echo isset($_GET['user_id']) ? '&user_id='.$_GET['user_id'] : ''; ?>">Next</a>
+                        <a class="page-link" href="?page=<?php echo $page+1; ?>&limit=<?php echo $limit; ?><?php echo isset($_GET['search']) ? '&search='.$_GET['search'] : ''; ?><?php echo isset($_GET['action']) ? '&action='.$_GET['action'] : ''; ?><?php echo isset($_GET['user_id']) ? '&user_id='.$_GET['user_id'] : ''; ?>">Next</a>
                     </li>
                 </ul>
             </nav>
@@ -371,6 +386,8 @@ $users_result = mysqli_query($conn, $users_query);
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+const locationMap = <?php echo json_encode($location_map); ?>;
+
 function viewDetails(data) {
     const modalBody = document.getElementById('modalContent');
     
@@ -390,6 +407,19 @@ function viewDetails(data) {
             let valOld = oldObj[key] !== undefined ? oldObj[key] : '—';
             let valNew = newObj[key] !== undefined ? newObj[key] : '—';
             
+            // DITO NA-MAP ANG MGA NUMBERS PATUNGO SA CLIENT_NAME MASTER
+            if (key === 'location') {
+                let oldIdInt = parseInt(valOld, 10);
+                let newIdInt = parseInt(valNew, 10);
+                
+                if (!isNaN(oldIdInt) && locationMap[oldIdInt]) {
+                    valOld = locationMap[oldIdInt];
+                }
+                if (!isNaN(newIdInt) && locationMap[newIdInt]) {
+                    valNew = locationMap[newIdInt];
+                }
+            }
+
             if(typeof valOld === 'object') valOld = JSON.stringify(valOld);
             if(typeof valNew === 'object') valNew = JSON.stringify(valNew);
             
