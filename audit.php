@@ -55,7 +55,7 @@ $total_rows = mysqli_fetch_assoc($count_result)['total'];
 $total_pages = ceil($total_rows / $limit);
 
 // Get audit logs
-$query = "SELECT * FROM audit_log $where_clause ORDER BY created_at DESC LIMIT $offset, $limit";
+$query = "SELECT * FROM audit_log  $where_clause ORDER BY created_at DESC LIMIT $offset, $limit";
 $result = mysqli_query($conn, $query);
 
 // Get distinct actions for filter dropdown
