@@ -158,7 +158,7 @@ $recent_logs_result = mysqli_query($conn, $recent_logs_query);
         .card-icon { font-size: 3.5rem; opacity: 0.2; position: absolute; right: -10px; bottom: -10px; }
         
         .bg-inuse { background: linear-gradient(135deg, #AD49E1 0%, #AD49E1 100%); }
-        .bg-disposal { background: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%); }
+        .bg-disposal { background: linear-gradient(135deg, #62109F 0%, #62109F 100%); }
         .bg-replacement { background: linear-gradient(135deg, #2E073F 0%, #2E073F 100%); }
         .bg-storage { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); }
 
@@ -338,7 +338,7 @@ $recent_logs_result = mysqli_query($conn, $recent_logs_query);
                     <?php echo $count_replacement; ?>, 
                     <?php echo $count_storage; ?>
                 ],
-                backgroundColor: ['#AD49E1', '#7A1CAC', '#2E073F', '#6c757d'],
+                backgroundColor: ['#AD49E1', '#62109F', '#2E073F', '#6c757d'],
                 borderWidth: 3,
                 borderColor: '#ffffff',
                 hoverOffset: 15

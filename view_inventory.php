@@ -411,10 +411,15 @@ $sub_title = "Asset Tracking System"; ?>
                                    ?>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><h6 class="dropdown-header">By Status</h6></li>
+                            <li><h6 class="dropdown-header">By Type</h6></li>
+                            <li><a class="dropdown-item <?php echo $filter_type == 'All Status' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'All Status')">All Status</a></li>
                             <li><a class="dropdown-item <?php echo $filter_type == 'Laptop' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'Laptop')">Laptops</a></li>
                             <li><a class="dropdown-item <?php echo $filter_type == 'Desktop' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'Desktop')">Desktops</a></li>
                             <li><a class="dropdown-item <?php echo $filter_type == 'Monitor' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'Monitor')">Monitors</a></li>
+                        <li><h6 class="dropdown-header">By Status</h6></li>
+                            <li><a class="dropdown-item <?php echo $filter_status == 'Active' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Active')">Active</a></li>
+                            <li><a class="dropdown-item <?php echo $filter_status == 'Replacement' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Replacement')">Replacement</a></li>
+                            <li><a class="dropdown-item <?php echo $filter_status == 'Disposal' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Disposal')">Disposal</a></li>
                         </ul>
                     </div>
                 </form>
