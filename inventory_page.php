@@ -7,14 +7,29 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+// Kunin ang string name mula sa URL parameter (Halimbawa: ?location=BDO)
 $location = isset($_GET['location']) ? mysqli_real_escape_string($conn, $_GET['location']) : 'BDO';
 
-// Stats Query
-$active_query = mysqli_query($conn, "SELECT COUNT(*) as t FROM assets WHERE location = '$location' AND status = 'Active'");
+/**
+ * FIXED QUERIES:
+ * Ginagamit na ang 'client_accounts' na siyang totoong pangalan ng table sa phpMyAdmin mo.
+ */
+
+// 1. Stats Query - Bilangin ang active assets para sa partikular na client name gamit ang JOIN
+$active_query = mysqli_query($conn, "
+    SELECT COUNT(a.id) as t 
+    FROM assets a 
+    JOIN client_accounts acc ON a.location = acc.account_id 
+    WHERE acc.client_name = '$location' AND a.status = 'Active'
+");
 $active = mysqli_fetch_assoc($active_query)['t'] ?? 0;
 
-// Kunin ang listahan ng assets
-$assets = mysqli_query($conn, "SELECT * FROM assets WHERE location = '$location'");
+// 2. Listahan ng Assets - Kunin ang assets na tumutugma sa client name gamit ang JOIN
+$assets = mysqli_query($conn, "
+    SELECT a.*, acc.client_name 
+    FROM assets a 
+    JOIN client_accounts acc ON a.location = acc.account_id 
+    WHERE acc.client_name = '$location'");
 
 $current_page = 'view_area.php'; 
 
@@ -57,7 +72,6 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             transition: all 0.3s ease;
         }
 
-        /* Glass Header */
         .glass-header {
             background: white;
             border-radius: 20px;
@@ -70,7 +84,6 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             border: 1px solid rgba(255,255,255,0.7);
         }
 
-        /* Stat Cards */
         .stat-card-modern {
             background: white;
             border-radius: 20px;
@@ -90,7 +103,6 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             background: var(--main-gradient);
         }
 
-        /* Table Card & Search */
         .table-card {
             background: white;
             border-radius: 25px;
@@ -120,7 +132,6 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
         .btn-purple { background: var(--main-gradient); border: none; color: white; }
         .btn-purple:hover { color: white; opacity: 0.9; }
 
-        /* Table Styling */
         .custom-table thead th {
             color: #6f42c1; font-size: 0.7rem; text-transform: uppercase;
             letter-spacing: 1px; font-weight: 800; padding: 15px;
@@ -140,7 +151,6 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             align-items: center; justify-content: center; font-weight: 800;
         }
 
-        /* Mobile Optimization */
         @media (max-width: 992px) {
             .content-wrapper { margin-left: 0; padding: 1rem; }
             .glass-header { margin-top: 50px; } 
@@ -149,7 +159,6 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
         @media (max-width: 576px) {
             .header-title h4 { font-size: 1rem; }
             .btn-action-main { width: 100%; justify-content: center; display: flex; }
-            .d-flex-mobile { flex-direction: column !important; }
         }
     </style>
 
@@ -176,9 +185,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
     
     <div class="content-wrapper" style="<?php echo $is_embed ? 'margin-left: 0 !important;' : ''; ?>">
         
-        <?php 
-            if (!$is_embed): 
-        ?>
+        <?php if (!$is_embed): ?>
             <div class="glass-header">
                 <div class="header-title">
                     <h4 class="fw-800 m-0"><?php echo htmlspecialchars($location); ?> <span style="color: var(--accent-pink);">INVENTORY</span></h4>
@@ -186,7 +193,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <div class="text-end d-none d-md-block">
-                        <div class="small fw-800" style="color: var(--accent-purple);"><?php echo $_SESSION['user'] ?? 'User'; ?></div>
+                        <div class="small fw-800" style="color: var(--accent-purple);"><?php echo htmlspecialchars($_SESSION['user'] ?? 'User'); ?></div>
                         <a href="logout.php" class="text-decoration-none fw-bold" style="font-size: 0.65rem; color: var(--accent-pink);">SIGN OUT</a>
                     </div>
                     <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'] ?? 'U', 0, 1)); ?></div>
@@ -254,25 +261,27 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while($row = mysqli_fetch_assoc($assets)): ?>
-                        <tr class="asset-row" 
-                            data-type="<?php echo htmlspecialchars($row['asset_type'] ?? ''); ?>" 
-                            data-status="<?php echo htmlspecialchars($row['status'] ?? ''); ?>">
-                            <td class="fw-800 text-dark"><?php echo $row['asset_tag']; ?></td>
-                            <td>
-                                <div class="fw-800 text-primary" style="font-size: 0.9rem;"><?php echo $row['brand_model']; ?></div>
-                                <div class="text-muted small fw-600"><?php echo $row['serial_number']; ?></div>
-                            </td>
-                            <td><span class="fw-700 text-muted"><?php echo $row['asset_type'] ?? 'N/A'; ?></span></td>
-                            <td><span class="badge-location"><?php echo $row['location']; ?></span></td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-800" style="font-size: 0.7rem;">PULLOUT</button>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
-                        
-                        <?php if(mysqli_num_rows($assets) == 0): ?>
-                        <tr><td colspan="5" class="text-center py-5 text-muted fw-600">No assets found in this location.</td></tr>
+                        <?php if($assets && mysqli_num_rows($assets) > 0): ?>
+                            <?php while($row = mysqli_fetch_assoc($assets)): ?>
+                            <tr class="asset-row" 
+                                data-type="<?php echo htmlspecialchars($row['asset_type'] ?? ''); ?>" 
+                                data-status="<?php echo htmlspecialchars($row['status'] ?? ''); ?>">
+                                <td class="fw-800 text-dark"><?php echo htmlspecialchars($row['asset_tag']); ?></td>
+                                <td>
+                                    <div class="fw-800 text-primary" style="font-size: 0.9rem;"><?php echo htmlspecialchars($row['brand_model']); ?></div>
+                                    <div class="text-muted small fw-600"><?php echo htmlspecialchars($row['serial_number']); ?></div>
+                                </td>
+                                <td><span class="fw-700 text-muted"><?php echo htmlspecialchars($row['asset_type'] ?? 'N/A'); ?></span></td>
+                                
+                                <td><span class="badge-location"><?php echo htmlspecialchars($row['client_name']); ?></span></td>
+                                
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-800" style="font-size: 0.7rem;">PULLOUT</button>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr><td colspan="5" class="text-center py-5 text-muted fw-600">No assets found in this location.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
