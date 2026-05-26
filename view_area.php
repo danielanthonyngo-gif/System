@@ -11,6 +11,16 @@
         }
     }
 
+    // --- AUTOMATED HELPER TO FETCH CURRENT LOGGED-IN USER FOR AUDIT ---
+    $current_logger_name = "System/Unknown";
+    if (isset($_SESSION['user_id'])) {
+        $session_uid = $_SESSION['user_id'];
+        $track_user_query = mysqli_query($conn, "SELECT fullname FROM users WHERE id = '$session_uid' LIMIT 1");
+        if ($t_row = mysqli_fetch_assoc($track_user_query)) {
+            $current_logger_name = $t_row['fullname'];
+        }
+    }
+
     // --- HELPER FUNCTION TO DETECT IF THE AREA IS EXISTING ---
     function is_duplicate_area($conn, $new_name) {
         $clean_name = mysqli_real_escape_string($conn, trim($new_name));
@@ -18,7 +28,7 @@
         return mysqli_num_rows($query) > 0;
     }
 
-    // --- ADD LOGIC ---
+    // --- ADD LOGIC (WITH USER TRACKING) ---
         $error_msg = "";
 
         if (isset($_POST['add_area'])) {
@@ -35,10 +45,18 @@
 
                     if (mysqli_query($conn, $insert_query)) {
                         $new_id = mysqli_insert_id($conn);
+                        
+                        // --- DYNAMIC BUILDING NAME FETCH FOR LOG AUDIT ---
+                        $b_name_query = mysqli_query($conn, "SELECT building_name FROM buildings WHERE building_id = $building_id LIMIT 1");
+                        $b_name_row = mysqli_fetch_assoc($b_name_query);
+                        $building_log_name = $b_name_row['building_name'] ?? 'Unknown Building';
+
                         $newData = [
                             'account_id'   => $new_id,
                             'building_id'  => $building_id,
-                            'client_name'  => $new_name
+                            'building_name'=> $building_log_name,
+                            'client_name'  => $new_name,
+                            'created_by'   => $current_logger_name // Naka-track kung sinong user ang nag-add
                         ];
                         logAudit($conn, 'ADD_AREA', 'area', $new_id, null, $newData);
                         header("Location: view_area.php?msg=success_add");
@@ -50,7 +68,47 @@
             }
         }
 
-    // --- DELETE LOGIC ---
+    // --- EDIT/UPDATE LOGIC PARA SA PAGLIPAT NG BUILDING (WITH USER TRACKING) ---
+    if (isset($_POST['update_area_building'])) {
+        $edit_id = intval($_POST['edit_account_id']);
+        $new_building_type = $_POST['edit_building_type'];
+        $new_building_id = ($new_building_type == 'Alpha') ? 1 : 2;
+
+        // Kuhanin ang lumang data para sa Log Audit
+        $old_data_query = mysqli_query($conn, "SELECT * FROM client_accounts WHERE account_id = $edit_id LIMIT 1");
+        if (mysqli_num_rows($old_data_query) > 0) {
+            $oldData = mysqli_fetch_assoc($old_data_query);
+
+            // I-update ang building_id sa database
+            $update_query = "UPDATE client_accounts SET building_id = $new_building_id WHERE account_id = $edit_id";
+            if (mysqli_query($conn, $update_query)) {
+                
+                // Kuhanin ang bagong pangalan ng building para sa log
+                $b_name_query2 = mysqli_query($conn, "SELECT building_name FROM buildings WHERE building_id = $new_building_id LIMIT 1");
+                $b_name_row2 = mysqli_fetch_assoc($b_name_query2);
+                $new_building_log_name = $b_name_row2['building_name'] ?? 'Unknown Building';
+
+                $newData = [
+                    'account_id'    => $edit_id,
+                    'building_id'   => $new_building_id,
+                    'building_name' => $new_building_log_name,
+                    'client_name'   => $oldData['client_name'],
+                    'transferred_by'=> $current_logger_name // Naka-track kung sinong user ang nag-transfer ng building
+                ];
+
+                // Pag-trigger ng logAudit function para sa edit/transfer
+                logAudit($conn, 'EDIT_AREA', 'area', $edit_id, $oldData, $newData);
+                
+                $_SESSION['update_success'] = true;
+                header("Location: view_area.php?msg=success_update");
+                exit();
+            } else {
+                $error_msg = "Failed to transfer building: " . mysqli_error($conn);
+            }
+        }
+    }
+
+    // --- DELETE LOGIC (WITH USER TRACKING) ---
     if (isset($_GET['del_id'])) {
         $target_id = intval($_GET['del_id']);
 
@@ -63,18 +121,23 @@
         } else {
             $targetData = mysqli_query($conn, "SELECT * FROM client_accounts WHERE account_id = $target_id LIMIT 1  ");
             $rowTarget = mysqli_fetch_assoc($targetData);
+            
+            // Isama sa payload ang impormasyon kung sino ang nag-delete bago burahin ang record
+            if ($rowTarget) {
+                $rowTarget['deleted_by'] = $current_logger_name; 
+            }
+
             $delete_query = "DELETE FROM client_accounts WHERE account_id = $target_id";
             if (mysqli_query($conn, $delete_query)) {
                 $_SESSION['delete_success'] = true;
-                header("Location: " . $_SERVER['PHP_SELF']);
-               
+                
                 logAudit($conn, 'DELETE_AREA', 'area', $target_id, $rowTarget, null);
-            header("Location: view_area.php?msg=success_delete");
+                header("Location: view_area.php?msg=success_delete");
                 exit();
-        } else {
-            $error_msg = "Failed to delete area: " . mysqli_error($conn);
+            } else {
+                $error_msg = "Failed to delete area: " . mysqli_error($conn);
+            }
         }
-    }
     }
 ?>
 
@@ -193,6 +256,14 @@
         }
         .area-card:hover .delete-overlay { opacity: 1; }
 
+        .edit-overlay {
+            position: absolute; top: 10px; left: 10px; background: rgba(122, 28, 172, 0.1); color: #7A1CAC;
+            border: none; width: 25px; height: 25px; border-radius: 8px; font-size: 0.7rem;
+            display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; z-index: 5;
+            cursor: pointer;
+        }
+        .area-card:hover .edit-overlay { opacity: 1; }
+
         .card-header-label { background: #fcfaff; padding: 15px; font-size: 0.75rem; font-weight: 800; color: #3b1845; text-transform: uppercase; border-bottom: 1px solid #f1f0f7; }
         .pc-icon-wrapper { padding: 25px 0; font-size: 2.5rem; background: var(--main-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .stat-container { display: grid; grid-template-columns: 1fr 1fr; background: #ffffff; padding-bottom: 10px; }
@@ -237,7 +308,12 @@
             </button>
         </div>
 
-        <div class="section-title">ALPHA BUILDING & OTHERS</div>
+        <?php 
+            $alpha_title_query = mysqli_query($conn, "SELECT building_name FROM buildings WHERE building_id = 1 LIMIT 1");
+            $alpha_title_row = mysqli_fetch_assoc($alpha_title_query);
+            $alpha_title = $alpha_title_row['building_name'] ?? 'ALPHA BUILDING & OTHERS';
+        ?>
+        <div class="section-title"><?php echo htmlspecialchars($alpha_title); ?></div>
         <div class="row g-4 mb-5">
             <?php 
                 $alpha_query = mysqli_query($conn, "SELECT * FROM client_accounts WHERE building_id = 1 ORDER BY account_id ASC");
@@ -250,7 +326,9 @@
             ?>
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                 <div class="area-card text-center">
+                    <a onclick="openEditModal(<?php echo $id; ?>, '<?php echo addslashes($name); ?>', 'Alpha')" class="edit-overlay"><i class="fas fa-pencil-alt"></i></a>
                     <a onclick="confirmDelete(<?php echo $id; ?>, '<?php echo addslashes($name); ?>')" class="delete-overlay"><i class="fas fa-times"></i></a>
+                    
                     <a href="#" data-location="<?php echo htmlspecialchars($name); ?>" class="text-decoration-none view-assets-popup-trigger">
                         <div class="card-header-label"><?php echo htmlspecialchars($name); ?></div>
                         <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
@@ -264,7 +342,12 @@
             <?php endwhile; ?>
         </div>
 
-        <div class="section-title">BETA BUILDING</div>
+        <?php 
+            $beta_title_query = mysqli_query($conn, "SELECT building_name FROM buildings WHERE building_id = 2 LIMIT 1");
+            $beta_title_row = mysqli_fetch_assoc($beta_title_query);
+            $beta_title = $beta_title_row['building_name'] ?? 'BETA BUILDING';
+        ?>
+        <div class="section-title"><?php echo htmlspecialchars($beta_title); ?></div>
         <div class="row g-4 mb-4">
             <?php 
                 $beta_query = mysqli_query($conn, "SELECT * FROM client_accounts WHERE building_id = 2 ORDER BY account_id ASC");
@@ -277,7 +360,9 @@
             ?>
             <div class="col-xl-2 col-lg-3 col-md-4 col-6">
                 <div class="area-card text-center">
+                    <a onclick="openEditModal(<?php echo $id; ?>, '<?php echo addslashes($name); ?>', 'Beta')" class="edit-overlay"><i class="fas fa-pencil-alt"></i></a>
                     <a onclick="confirmDelete(<?php echo $id; ?>, '<?php echo addslashes($name); ?>')" class="delete-overlay"><i class="fas fa-times"></i></a>
+                    
                     <a href="#" data-location="<?php echo htmlspecialchars($name); ?>" class="text-decoration-none view-assets-popup-trigger">
                         <div class="card-header-label"><?php echo htmlspecialchars($name); ?></div>
                         <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>
@@ -289,6 +374,36 @@
                 </div>
             </div>
             <?php endwhile; ?>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 25px;">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 style="color: #7A1CAC; font-weight: 800;">TRANSFER / EDIT AREA BUILDING</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+                <input type="hidden" name="edit_account_id" id="edit_account_id">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-700">Area Name</label>
+                        <input type="text" id="edit_area_name" class="form-control" readonly style="border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0; background-color: #f1f5f9;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-700">Move to Building</label>
+                        <select name="edit_building_type" id="edit_building_type" class="form-select" style="border-radius: 12px; padding: 12px; border: 1px solid #e2e8f0;">
+                            <option value="Alpha">Alpha Building</option>
+                            <option value="Beta">Beta Building</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="submit" name="update_area_building" class="btn-add-area w-100">UPDATE BUILDING LOCATION</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -356,6 +471,15 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    function openEditModal(id, areaName, currentBuilding) {
+        document.getElementById('edit_account_id').value = id;
+        document.getElementById('edit_area_name').value = areaName;
+        document.getElementById('edit_building_type').value = currentBuilding;
+        
+        var editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        editModal.show();
+    }
+
     function confirmDelete(id, areaName) {
         Swal.fire({
             title: 'Are you sure?',
@@ -388,7 +512,6 @@
             var assetsModal = new bootstrap.Modal(document.getElementById('assetsPopModal'));
             assetsModal.show();
             
-            // DITO ANG SIKRETONG FIX: Nagpasa tayo ng embed flag sa URL parameter nang hindi binabago ang inner page configurations!
             let queryUrl = 'inventory_page.php?location=' + encodeURIComponent(targetLocation) + '&layout=embed';
             $('#popupLiveFrame').attr('src', queryUrl);
             
@@ -420,6 +543,21 @@
     });
 </script>
 <?php unset($_SESSION['delete_success']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['update_success'])): ?>
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Transferred!',
+        text: 'The area building destination has been successfully updated.',
+        timer: 2500,
+        showConfirmButton: false,
+        background: '#ffffff',
+        borderRadius: '25px'
+    });
+</script>
+<?php unset($_SESSION['update_success']); ?>
 <?php endif; ?>
 
 </body>
