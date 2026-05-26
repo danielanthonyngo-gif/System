@@ -263,6 +263,29 @@
         .input-custom { border-radius: 12px; padding: 12px 15px; border: 1.5px solid #eee; background: #fafafa; font-weight: 600; font-size: 0.9rem; width: 100%; transition: 0.3s; }
         .input-custom:focus { border-color: var(--inspiro-purple); outline: none; background: #fff; }
         .form-label-custom { font-weight: 700; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; display: block; }
+    /* Metric Cards Layout */
+.metric-card { 
+    border-radius: 18px; 
+    padding: 20px; 
+    border: none; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+/* Active Style (Purple/Violet) */
+.card-active { background: #F3E5F5; color: #7A1CAC; }
+.card-active .metric-val { color: #7A1CAC; }
+
+/* Replacement Style (Orange/Yellow) */
+.card-replacement { background: #FFF3E0; color: #EF6C00; }
+.card-replacement .metric-val { color: #EF6C00; }
+
+/* Disposal Style (Red/Light-Red) */
+.card-disposal { background: #FFEBEE; color: #C62828; }
+.card-disposal .metric-val { color: #C62828; }
     </style>
 </head>
 <body>
@@ -275,11 +298,27 @@
      <?php include 'header.php'; ?>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-4"><div class="metric-card d-flex justify-content-between align-items-center"><span class="text-muted fw-bold small">ACTIVE</span><span class="metric-val text-primary"><?php echo $count_active; ?></span></div></div>
-        <div class="col-md-4"><div class="metric-card d-flex justify-content-between align-items-center"><span class="text-muted fw-bold small">REPLACEMENT</span><span class="metric-val text-warning"><?php echo $count_replacement; ?></span></div></div>
-        <div class="col-md-4"><div class="metric-card d-flex justify-content-between align-items-center"><span class="text-muted fw-bold small">FOR DISPOSAL</span><span class="metric-val text-danger"><?php echo $count_disposal; ?></span></div></div>
+    <div class="col-md-4">
+        <div class="metric-card card-active">
+            <span class="fw-bold small">ACTIVE</span>
+            <span class="metric-val fw-bolder"><?php echo $count_active; ?></span>
+        </div>
     </div>
-
+    
+    <div class="col-md-4">
+        <div class="metric-card card-replacement">
+            <span class="fw-bold small">REPLACEMENT</span>
+            <span class="metric-val fw-bolder"><?php echo $count_replacement; ?></span>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="metric-card card-disposal">
+            <span class="fw-bold small">FOR DISPOSAL</span>
+            <span class="metric-val fw-bolder"><?php echo $count_disposal; ?></span>
+        </div>
+    </div>
+</div>
     <div class="data-panel">
         <div class="row g-3 mb-4 align-items-center">
             <div class="col-md-7">

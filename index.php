@@ -152,9 +152,13 @@ $recent_logs_result = mysqli_query($conn, $recent_logs_query);
             overflow: hidden;
             transition: 0.3s;
             box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            cursor: pointer;
         }
 
-        .status-card:hover { transform: translateY(-5px); }
+        .status-card:hover { 
+            transform: translateY(-5px); 
+        }
+
         .card-icon { font-size: 3.5rem; opacity: 0.2; position: absolute; right: -10px; bottom: -10px; }
         
         .bg-inuse { background: linear-gradient(135deg, #AD49E1 0%, #AD49E1 100%); }
@@ -203,37 +207,47 @@ $recent_logs_result = mysqli_query($conn, $recent_logs_query);
     <div class="container-fluid p-0">
         <div class="row g-4 mb-4">
             <div class="col-md-3">
-                <div class="status-card bg-inuse">
-                    <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Use Assets</p>
-                    <h2 class="display-6 fw-bold mb-0"><?php echo $count_in_use; ?></h2>
-                    <i class="fas fa-desktop card-icon"></i>
-                </div>
+                <a href="index_page.php?status=Active" class="text-decoration-none">
+                    <div class="status-card bg-inuse">
+                        <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Use Assets</p>
+                        <h2 class="display-6 fw-bold mb-0"><?php echo $count_in_use; ?></h2>
+                        <i class="fas fa-desktop card-icon"></i>
+                    </div>
+                </a>
             </div>
+            
             <div class="col-md-3">
-                <div class="status-card bg-disposal">
-                    <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">For Disposal</p>
-                    <h2 class="display-6 fw-bold mb-0"><?php echo $count_disposal; ?></h2>
-                    <i class="fas fa-dumpster card-icon"></i>
-                </div>
+                <a href="index_page.php?status=For Disposal" class="text-decoration-none">
+                    <div class="status-card bg-disposal">
+                        <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">For Disposal</p>
+                        <h2 class="display-6 fw-bold mb-0"><?php echo $count_disposal; ?></h2>
+                        <i class="fas fa-dumpster card-icon"></i>
+                    </div>
+                </a>
             </div>
+            
             <div class="col-md-3">
-                <div class="status-card bg-replacement">
-                    <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">Replacement</p>
-                    <h2 class="display-6 fw-bold mb-0"><?php echo $count_replacement; ?></h2>
-                    <i class="fas fa-tools card-icon"></i>
-                </div>
+                <a href="index_page.php?status=Replacement" class="text-decoration-none">
+                    <div class="status-card bg-replacement">
+                        <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">Replacement</p>
+                        <h2 class="display-6 fw-bold mb-0"><?php echo $count_replacement; ?></h2>
+                        <i class="fas fa-tools card-icon"></i>
+                    </div>
+                </a>
             </div>
+            
             <div class="col-md-3">
-                <div class="status-card bg-storage">
-                    <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Storage</p>
-                    <h2 class="display-6 fw-bold mb-0"><?php echo $count_storage; ?></h2>
-                    <i class="fas fa-boxes-stacked card-icon"></i>
-                </div>
+                <a href="index_page.php?status=In Storage" class="text-decoration-none">
+                    <div class="status-card bg-storage">
+                        <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Storage</p>
+                        <h2 class="display-6 fw-bold mb-0"><?php echo $count_storage; ?></h2>
+                        <i class="fas fa-boxes-stacked card-icon"></i>
+                    </div>
+                </a>
             </div>
         </div>
 
         <div class="row g-4">
-            <!-- Pie Chart Card -->
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
                     <h5 class="fw-bold mb-4" style="color: #2E073F;">Asset Distribution Breakdown</h5>
@@ -243,7 +257,6 @@ $recent_logs_result = mysqli_query($conn, $recent_logs_query);
                 </div>
             </div>
 
-            <!-- Recent Activity Logs Card -->
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
                     <div class="d-flex justify-content-between align-items-center mb-4">
