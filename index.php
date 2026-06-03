@@ -1,3 +1,5 @@
+DASHBOARD NEW
+
 <?php
 session_start();
 include 'config.php';
@@ -38,13 +40,35 @@ $p_storage = $total_assets > 0 ? round(($count_storage / $total_assets) * 100, 1
 // Para sa live secondary metric (Maintenance Pool)
 $total_maintenance = $count_replacement + $count_disposal;
 
-// Dynamic Base para sa Maintenance Graph para sumunod ang alon sa kasalukuyang bilang ng maintenance assets
+// Dynamic Base para sa Maintenance Graph para sumunon ang alon sa kasalukuyang bilang ng maintenance assets
 $dynamic_clicks_base = $total_maintenance > 0 ? ($total_maintenance * 15) : ($total_assets * 5);
 if($dynamic_clicks_base < 100) { $dynamic_clicks_base = 1050; } // Fallback para maganda pa rin ang alon kung walang laman ang DB
 
 // --- RECENT AUDIT LOGS FOR DASHBOARD ---
 $recent_logs_query = "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 5";
 $recent_logs_result = mysqli_query($conn, $recent_logs_query);
+
+// --- AREA LOGIC FOR ALPHA AND BETA BAR GRAPHS ---
+// *Master, kung sakaling mag-0 ang count o iba ang tawag sa column ng area/site niyo, palitan lang 'yung `site=` sa loob ng function.*
+function getAssetCountByArea($conn, $areaName, $status) {
+    $query = "SELECT COUNT(*) as total FROM assets WHERE site='$areaName' AND status='$status'";
+    $result = @mysqli_query($conn, $query);
+    if ($result) {
+        $row = mysqli_fetch_assoc($result);
+        return $row['total'] ?? 0;
+    }
+    return 0;
+}
+
+$alpha_in_use      = getAssetCountByArea($conn, 'Alpha', 'Active');
+$alpha_disposal    = getAssetCountByArea($conn, 'Alpha', 'For Disposal');
+$alpha_replacement = getAssetCountByArea($conn, 'Alpha', 'Replacement');
+$alpha_storage     = getAssetCountByArea($conn, 'Alpha', 'in_stock');
+
+$beta_in_use       = getAssetCountByArea($conn, 'Beta', 'Active');
+$beta_disposal     = getAssetCountByArea($conn, 'Beta', 'For Disposal');
+$beta_replacement  = getAssetCountByArea($conn, 'Beta', 'Replacement');
+$beta_storage      = getAssetCountByArea($conn, 'Beta', 'in_stock');
 ?>
 
 <!DOCTYPE html>
@@ -247,6 +271,25 @@ $recent_logs_result = mysqli_query($conn, $recent_logs_query);
             </div>
         </div>
 
+        <div class="row g-4 mb-4">
+            <div class="col-xl-6 col-lg-12">
+                <div class="chart-card">
+                    <h5 class="fw-bold mb-4" style="color: #2E073F;">Alpha Area Asset Count</h5>
+                    <div style="height: 300px;">
+                        <canvas id="alphaBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6 col-lg-12">
+                <div class="chart-card">
+                    <h5 class="fw-bold mb-4" style="color: #2E073F;">Beta Area Asset Count</h5>
+                    <div style="height: 300px;">
+                        <canvas id="betaBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4">
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
@@ -377,6 +420,70 @@ $recent_logs_result = mysqli_query($conn, $recent_logs_query);
                         }
                     }
                 }
+            }
+        }
+    });
+
+    // 2. ALPHA AREA BAR CHART
+    const alphaCtx = document.getElementById('alphaBarChart').getContext('2d');
+    new Chart(alphaCtx, {
+        type: 'bar',
+        data: {
+            labels: ['In Use', 'For Disposal', 'Replacement', 'In Storage'],
+            datasets: [{
+                label: 'Asset Count',
+                data: [
+                    <?php echo $alpha_in_use; ?>,
+                    <?php echo $alpha_disposal; ?>,
+                    <?php echo $alpha_replacement; ?>,
+                    <?php echo $alpha_storage; ?>
+                ],
+                backgroundColor: ['#AD49E1', '#62109F', '#2E073F', '#6c757d'],
+                borderRadius: 10,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { display: false } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 3. BETA AREA BAR CHART
+    const betaCtx = document.getElementById('betaBarChart').getContext('2d');
+    new Chart(betaCtx, {
+        type: 'bar',
+        data: {
+            labels: ['In Use', 'For Disposal', 'Replacement', 'In Storage'],
+            datasets: [{
+                label: 'Asset Count',
+                data: [
+                    <?php echo $beta_in_use; ?>,
+                    <?php echo $beta_disposal; ?>,
+                    <?php echo $beta_replacement; ?>,
+                    <?php echo $beta_storage; ?>
+                ],
+                backgroundColor: ['#AD49E1', '#62109F', '#2E073F', '#6c757d'],
+                borderRadius: 10,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { display: false } },
+                x: { grid: { display: false } }
             }
         }
     });
