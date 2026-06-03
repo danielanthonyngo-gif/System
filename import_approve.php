@@ -424,7 +424,47 @@ if (isset($_POST['save_asset'])) {
             </div>
         </div>
     
-        <div id="table-to-export">
+        <?php
+// GUMAGANA AT NAG-PROPROCESS NG PAGLIPAT SA INVENTORY TABLE
+if (isset($_POST['confirm_selection'])) {
+    if (!empty($_POST['asset_ids'])) {
+        // Kinukuha ang lahat ng napiling ID at sinisigurong ligtas laban sa SQL injection
+        $selected_ids = array_map('intval', $_POST['asset_ids']);
+        $ids_string = implode(',', $selected_ids);
+
+        // START DATABASE TRANSACTION PARA SIGURADONG LIGTAS ANG PAGLIPAT
+        mysqli_begin_transaction($conn);
+
+        try {
+            // 1. KOPYAHIN ANG DATA MULA SA assets_temp PAPUNTA SA INVENTORY TABLE
+            // Tiyakin na ang mga column names dito ay tumutugma sa eksaktong istruktura ng mga table mo, master
+            $sql_insert = "INSERT INTO `assets` (asset_tag, asset_type, brand_model, year_model, serial_number, location, status, inventory_date) 
+                           SELECT asset_tag, asset_type, brand_model, year_model, serial_number, location, status, inventory_date 
+                           FROM `assets_temp` 
+                           WHERE id IN ($ids_string)";
+            mysqli_query($conn, $sql_insert);
+
+            // 2. BURAHIN ANG MGA NALIPAT NA DATA MULA SA assets_temp PARA MAWALA SILA SA KASALUKUYANG TALAHANAYAN
+            $sql_delete = "DELETE FROM `assets_temp` WHERE id IN ($ids_string)";
+            mysqli_query($conn, $sql_delete);
+
+            // I-commit ang pagbabago kung walang naging error
+            mysqli_commit($conn);
+
+            echo "<script>alert('Asset Approved " . count($selected_ids) . "'); window.location.href=window.location.href;</script>";
+        } catch (Exception $e) {
+            // Kapag nagka-error ang isa sa mga query, i-rollback para walang masirang data
+            mysqli_rollback($conn);
+            echo "<script>alert('Nagkaroon ng problema sa paglipat ng data. Pakisubukang muli.');</script>";
+        }
+    } else {
+        echo "<script>alert('Mangyaring pumili muna ng asset bago mag-confirm.');</script>";
+    }
+}
+?>
+
+<form method="POST" action="">
+<div id="table-to-export">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="bg-light">
@@ -437,6 +477,9 @@ if (isset($_POST['save_asset'])) {
                             <th>STATUS</th>
                              <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
                             <th class="no-export text-center">ACTION</th>
+                            <th class="no-export text-center">
+                                <input type="checkbox" id="selectAll" class="form-check-input"> SELECT ALL
+                            </th>
                             <?php endif; ?>
                         </tr>
                     </thead>
@@ -459,7 +502,7 @@ if (isset($_POST['save_asset'])) {
                             <td class="small fw-600"><?php echo date('M d, Y', strtotime($row['inventory_date'])); ?></td>
                             <td><span class="badge bg-light text-dark fw-bold border"><?php echo $row['asset_tag']; ?></span></td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary border-0 view-qr-btn" id="view-qr-btn-<?php echo $row['id']; ?>"
+                                    <button type="button" class="btn btn-sm btn-outline-primary border-0 view-qr-btn" id="view-qr-btn-<?php echo $row['id']; ?>"
                                         data-tag="<?php echo $row['asset_tag']; ?>"
                                         data-serial="<?php echo $row['serial_number']; ?>"
                                         data-model="<?php echo $row['brand_model']; ?>"
@@ -481,7 +524,7 @@ if (isset($_POST['save_asset'])) {
 
                              <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
                                 <td class="no-export text-center">
-                            <button class="btn btn-sm btn-outline-secondary border-0 editBtn"
+                            <button type="button" class="btn btn-sm btn-outline-secondary border-0 editBtn"
                                 data-id="<?php echo $row['id']; ?>"
                                 data-tag="<?php echo $row['asset_tag']; ?>"
                                 data-serial="<?php echo $row['serial_number']; ?>"
@@ -491,11 +534,14 @@ if (isset($_POST['save_asset'])) {
                                 <i class="fas fa-edit"></i>
                             </button>
 
-                            <button class="btn btn-sm btn-outline-danger border-0 ms-1 deleteBtn"
+                            <button type="button" class="btn btn-sm btn-outline-danger border-0 ms-1 deleteBtn"
                                 data-id="<?php echo $row['id']; ?>"
                                 data-tag="<?php echo $row['asset_tag']; ?>">
                                 <i class="fas fa-trash"></i>
                             </button>
+                        </td>
+                        <td class="no-export text-center">
+                            <input type="checkbox" name="asset_ids[]" value="<?php echo $row['id']; ?>" class="form-check-input asset-checkbox">
                         </td>
                             <?php endif; ?>
                         </tr>
@@ -506,6 +552,56 @@ if (isset($_POST['save_asset'])) {
         </div>
     </div>
 </div>
+
+<?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
+<div id="confirmBtnContainer" class="d-none justify-content-end mt-3 me-3">
+    <button type="submit" name="confirm_selection" id="confirmBtn" class="btn btn-primary px-4 fw-bold shadow-sm">
+        <i class="fas fa-check-circle me-2"></i> CONFIRM SELECTED
+    </button>
+</div>
+<?php endif; ?>
+</form>
+
+<script>
+const selectAllCheckbox = document.getElementById('selectAll');
+const assetCheckboxes = document.querySelectorAll('.asset-checkbox');
+const confirmBtnContainer = document.getElementById('confirmBtnContainer');
+
+function toggleConfirmButtonVisibility() {
+    let checkedCount = document.querySelectorAll('.asset-checkbox:checked').length;
+    
+    if (checkedCount > 0) {
+        confirmBtnContainer.classList.remove('d-none');
+        confirmBtnContainer.classList.add('d-flex');
+    } else {
+        confirmBtnContainer.classList.remove('d-flex');
+        confirmBtnContainer.classList.add('d-none');
+    }
+}
+
+if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+        assetCheckboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+        toggleConfirmButtonVisibility();
+    });
+}
+
+assetCheckboxes.forEach(cb => {
+    cb.addEventListener('change', function() {
+        if (!this.checked && selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+        }
+        let allChecked = document.querySelectorAll('.asset-checkbox:checked').length === assetCheckboxes.length;
+        if (allChecked && selectAllCheckbox) {
+            selectAllCheckbox.checked = true;
+        }
+        
+        toggleConfirmButtonVisibility();
+    });
+});
+</script>
 
 <div class="modal fade" id="createItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
