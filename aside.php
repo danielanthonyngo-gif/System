@@ -182,6 +182,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <a href="manage_user.php" class="nav-item <?php echo ($current_page == 'manage_user.php') ? 'active' : ''; ?>">
                 <i class="fas fa-users-cog"></i> <span>Manage Users</span>
             </a>
+            <a href="import_approve.php" class="nav-item <?php echo ($current_page == 'import_approve.php') ? 'active' : ''; ?>">
+                <i class="fas fa-users-cog"></i> <span>Import Approvals</span>
+            </a>
         <?php endif; ?>
     </nav>
 </div>

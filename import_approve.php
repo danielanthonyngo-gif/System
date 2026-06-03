@@ -42,23 +42,23 @@ if (isset($_POST['update_asset'])) {
     $status   = mysqli_real_escape_string($conn, $_POST['status']);
 
     // Check duplicate Asset TAG (exclude current asset)
-    $check_tag = mysqli_query($conn, "SELECT id FROM assets WHERE asset_tag = '$tag' AND id != '$asset_id'");
+    $check_tag = mysqli_query($conn, "SELECT id FROM assets_temp WHERE asset_tag = '$tag' AND id != '$asset_id'");
     if (mysqli_num_rows($check_tag) > 0) {
         header("Location: view_inventory.php?msg=error_duplicate_tag");
         exit();
     }
 
     // Check duplicate SERIAL NUMBER (exclude current asset)
-    $check_serial = mysqli_query($conn, "SELECT id FROM assets WHERE serial_number = '$serial' AND id != '$asset_id'");
+    $check_serial = mysqli_query($conn, "SELECT id FROM assets_temp WHERE serial_number = '$serial' AND id != '$asset_id'");
     if (mysqli_num_rows($check_serial) > 0) {
         header("Location: view_inventory.php?msg=error_duplicate_serial");
         exit();
     }
 
-    $old_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$asset_id'");
+    $old_query = mysqli_query($conn, "SELECT * FROM assets_temp WHERE id='$asset_id'");
     $old_data  = mysqli_fetch_assoc($old_query);
 
-    $update_query = "UPDATE assets SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
+    $update_query = "UPDATE assets_temp SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
 
     if (mysqli_query($conn, $update_query)) {
         logAudit($conn, 'UPDATE_ASSET', 'asset', $asset_id, $old_data, [
@@ -77,13 +77,6 @@ if (isset($_POST['update_asset'])) {
 // SAVE NEW ASSET
 // ==========================================
 if (isset($_POST['save_asset'])) {
-
-    $table_name = "assets_temp"; // Use temporary table for new entries
-
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator') {
-        $table_name = "assets"; // Admin can save directly to main table
-    }
-
     $serial    = mysqli_real_escape_string($conn, $_POST['serial_number']);
     $model     = mysqli_real_escape_string($conn, $_POST['brand_model']);
     $type      = mysqli_real_escape_string($conn, $_POST['type']);
@@ -97,20 +90,20 @@ if (isset($_POST['save_asset'])) {
         : "AST-" . strtoupper(substr($type, 0, 1)) . "-" . rand(1000, 9999);
 
     // Check duplicate Asset TAG
-    $check_tag = mysqli_query($conn, "SELECT id FROM $table_name WHERE asset_tag = '$asset_tag'");
+    $check_tag = mysqli_query($conn, "SELECT id FROM assets_temp WHERE asset_tag = '$asset_tag'");
     if (mysqli_num_rows($check_tag) > 0) {
         header("Location: view_inventory.php?msg=error_duplicate_tag");
         exit();
     }
 
     // Check duplicate SERIAL NUMBER
-    $check_serial = mysqli_query($conn, "SELECT id FROM $table_name WHERE serial_number = '$serial'");
+    $check_serial = mysqli_query($conn, "SELECT id FROM assets_temp WHERE serial_number = '$serial'");
     if (mysqli_num_rows($check_serial) > 0) {
         header("Location: view_inventory.php?msg=error_duplicate_serial");
         exit();
     }
 
-    $insert = "INSERT INTO $table_name  (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
+    $insert = "INSERT INTO assets_temp (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
 
     if (mysqli_query($conn, $insert)) {
         $new_asset_id = mysqli_insert_id($conn);
@@ -133,10 +126,10 @@ if (isset($_POST['save_asset'])) {
     if (isset($_GET['delete_id'])) {
         $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
 
-        $delete_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$delete_id'");
+        $delete_query = mysqli_query($conn, "SELECT * FROM assets_temp WHERE id='$delete_id'");
         $asset_data   = mysqli_fetch_assoc($delete_query);
 
-        if (mysqli_query($conn, "DELETE FROM assets WHERE id='$delete_id'")) {
+        if (mysqli_query($conn, "DELETE FROM assets_temp WHERE id='$delete_id'")) {
 
             logAudit($conn, 'DELETE_ASSET', 'asset', $delete_id, $asset_data, null);
             header("Location: view_inventory.php?msg=success_delete");
@@ -144,9 +137,9 @@ if (isset($_POST['save_asset'])) {
         }
     }
 
-    $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
-    $count_disposal    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
-    $count_active      = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
+    $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets_temp WHERE status='Replacement'"))['total'] ?? 0;
+    $count_disposal    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets_temp WHERE status='For Disposal'"))['total'] ?? 0;
+    $count_active      = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets_temp WHERE status='Active'"))['total'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -307,35 +300,35 @@ if (isset($_POST['save_asset'])) {
         .input-custom { border-radius: 12px; padding: 12px 15px; border: 1.5px solid #eee; background: #fafafa; font-weight: 600; font-size: 0.9rem; width: 100%; transition: 0.3s; }
         .input-custom:focus { border-color: var(--inspiro-purple); outline: none; background: #fff; }
         .form-label-custom { font-weight: 700; color: #666; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; display: block; }
-        /* Metric Cards Layout */
-        .metric-card { 
-            border-radius: 18px; 
-            padding: 20px; 
-            border: none; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            transition: transform 0.2s;
-        }
+    /* Metric Cards Layout */
+.metric-card { 
+    border-radius: 18px; 
+    padding: 20px; 
+    border: none; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    transition: transform 0.2s;
+}
 
-        /* Active Style (Purple/Violet) */
-        .card-active { background: #F3E5F5; color: #7A1CAC; }
-        .card-active .metric-val { color: #7A1CAC; }
+/* Active Style (Purple/Violet) */
+.card-active { background: #F3E5F5; color: #7A1CAC; }
+.card-active .metric-val { color: #7A1CAC; }
 
-        /* Replacement Style (Orange/Yellow) */
-        .card-replacement { background: #FFF3E0; color: #EF6C00; }
-        .card-replacement .metric-val { color: #EF6C00; }
+/* Replacement Style (Orange/Yellow) */
+.card-replacement { background: #FFF3E0; color: #EF6C00; }
+.card-replacement .metric-val { color: #EF6C00; }
 
-        /* Disposal Style (Red/Light-Red) */
-        .card-disposal { background: #FFEBEE; color: #C62828; }
-        .card-disposal .metric-val { color: #C62828; }
+/* Disposal Style (Red/Light-Red) */
+.card-disposal { background: #FFEBEE; color: #C62828; }
+.card-disposal .metric-val { color: #C62828; }
     </style>
 </head>
 <body>
 
 <?php include 'aside.php';
-    $title     = "INVENTORY MANAGEMENT";
+    $title     = "Temporary Assets";
     $sub_title = "Asset Tracking System"; ?>
 
 <div class="content-wrapper">
@@ -449,7 +442,7 @@ if (isset($_POST['save_asset'])) {
                     </thead>
                     <tbody>
                         <?php
-                            $sql = "SELECT * FROM `assets` as a LEFT JOIN client_accounts as b ON a.location=b.account_id";
+                            $sql = "SELECT * FROM `assets_temp` as a LEFT JOIN client_accounts as b ON a.location=b.account_id";
                             if (! empty($filter_status)) {$f  = mysqli_real_escape_string($conn, $filter_status);
                                 $sql          .= " AND status = '$f'";}
                             if (! empty($filter_type)) {$t  = mysqli_real_escape_string($conn, $filter_type);
@@ -579,8 +572,8 @@ if (isset($_POST['save_asset'])) {
                     </div>
                 </div>
                 <div class="text-end mt-4">
-                    <button type="button"  class="btn btn-light px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" id="saveAssetBtn" data-role='<?php echo $_SESSION['role'] ?>'  name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
+                    <button type="button" class="btn btn-light px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
                 </div>
             </form>
         </div>
@@ -780,31 +773,10 @@ if (isset($_POST['save_asset'])) {
         html2pdf().set(opt).from(container).save();
     }
 
-const urlParams = new URLSearchParams(window.location.search);
+   const urlParams = new URLSearchParams(window.location.search);
 
-if (urlParams.get('msg') === 'success_create') {
-    
-    // Nagdagdag tayo ng || 'USER' para kung walang role, maging 'USER' ito automatic
-    var role = $('#saveAssetBtn').data('role');
-
-    // Siguraduhin din natin na walang extra spaces gamit ang .trim()
-    if (role.trim() === 'Administrator') {
-        Swal.fire({ 
-            icon: 'success', 
-            title: 'Asset Added!', 
-            text: 'The new asset has been successfully added to the inventory.', 
-            showConfirmButton: false, 
-            timer: 6000 
-        });
-    } else {
-        Swal.fire({ 
-            icon: 'success', 
-            title: 'Asset Added!', 
-            text: 'Your asset addition request has been submitted and is pending approval.', 
-            showConfirmButton: false, 
-            timer: 6000 
-        });
-    }
+if(urlParams.get('msg') === 'success_create') {
+    Swal.fire({ icon: 'success', title: 'Asset Added!', showConfirmButton: false, timer: 1500 });
 }
 if(urlParams.get('msg') === 'success_update') {
     Swal.fire({ icon: 'success', title: 'Record Updated!', showConfirmButton: false, timer: 1500 });
