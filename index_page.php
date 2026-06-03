@@ -122,11 +122,10 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             box-shadow: 0 10px 25px rgba(111, 66, 193, 0.03);
             border: 1px solid #f1f0f7;
             height: 100%;
-            cursor: pointer; /* Ginawang mukhang clickable button ang card */
+            cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         
-        /* Hover at Active effect kapag pinindot ang card */
         .stat-card-modern:hover {
             transform: translateY(-3px);
             box-shadow: 0 12px 28px rgba(111, 66, 193, 0.08);
@@ -141,11 +140,10 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             color: white; font-size: 1.1rem;
         }
 
-        /* Iba't ibang kulay para sa mga status icons */
-        .bg-active { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); }
-        .bg-disposal { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); }
-        .bg-replacement { background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); }
-        .bg-storage { background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); }
+        .bg-active { background: linear-gradient(135deg, #AD49E1 0%, #AD49E1 100%); }
+        .bg-disposal { background: linear-gradient(135deg, #62109F 0%, #62109F 100%); }
+        .bg-replacement { background: linear-gradient(135deg, #2E073F 0%, #2E073F 100%); }
+        .bg-storage { background: linear-gradient(135deg, #6c757d 0%, #6c757d 100%); }
 
         .table-card {
             background: white;
@@ -246,6 +244,8 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
         <?php endif; ?>
 
         <div class="row g-3 mb-4">
+            
+            <?php if ($active > 0): ?>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <div class="stat-card-modern" onclick="clickStatCard('Active', 'Active')">
                     <div class="icon-box bg-active"><i class="fas fa-desktop"></i></div>
@@ -255,7 +255,9 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
             
+            <?php if ($disposal > 0): ?>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <div class="stat-card-modern" onclick="clickStatCard('For Disposal', 'For Disposal')">
                     <div class="icon-box bg-disposal"><i class="fas fa-trash-alt"></i></div>
@@ -265,7 +267,9 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
+            <?php if ($replacement > 0): ?>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <div class="stat-card-modern" onclick="clickStatCard('Replacement', 'Replacement')">
                     <div class="icon-box bg-replacement"><i class="fas fa-sync-alt"></i></div>
@@ -275,7 +279,9 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
+            <?php if ($storage > 0): ?>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <div class="stat-card-modern" onclick="clickStatCard('In Storage', 'In Storage')">
                     <div class="icon-box bg-storage"><i class="fas fa-box"></i></div>
@@ -285,6 +291,16 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
+
+            <?php if ($active == 0 && $disposal == 0 && $replacement == 0 && $storage == 0): ?>
+            <div class="col-12">
+                <div class="p-3 bg-white text-muted small fw-600 rounded-4 border text-center shadow-sm">
+                    <i class="fas fa-info-circle text-primary me-2"></i> Walang kasalukuyang nakatalang asset counts para sa lokasyong ito.
+                </div>
+            </div>
+            <?php endif; ?>
+            
         </div>
 
         <div class="table-card">
@@ -350,7 +366,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                                 
                                 <td><span class="badge-location"><?php echo htmlspecialchars($row['client_name']); ?></span></td>
                                 
-                                <td class="text-center">
+                                <td>
                                     <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-800" style="font-size: 0.7rem;">PULLOUT</button>
                                 </td>
                             </tr>
@@ -452,9 +468,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             applyFilters();
         }
 
-        // BAGONG FUNCTION: Taga-salo kapag ang kinlik ng user ay ang mismong Status Card sa itaas
         function clickStatCard(statusVal, label) {
-            // I-synchronize ang dropdown UI para sumabay kung ano ang pinindot na Card
             let item = document.querySelector(`#dropdownMenuFilter a[data-value="${statusVal}"]`);
             setFilter(statusVal, item, label);
         }
