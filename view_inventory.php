@@ -30,60 +30,97 @@
         $client_accounts[] = $ca;
     }
 
-    if (isset($_POST['update_asset'])) {
-        $asset_id = mysqli_real_escape_string($conn, $_POST['asset_id']);
-        $tag      = mysqli_real_escape_string($conn, $_POST['asset_tag']);
-        $serial   = mysqli_real_escape_string($conn, $_POST['serial_number']);
-        $model    = mysqli_real_escape_string($conn, $_POST['brand_model']);
-        $location = mysqli_real_escape_string($conn, $_POST['location']); // This is now an ID
-        $status   = mysqli_real_escape_string($conn, $_POST['status']);
+    // ==========================================
+// UPDATE ASSET
+// ==========================================
+if (isset($_POST['update_asset'])) {
+    $asset_id = mysqli_real_escape_string($conn, $_POST['asset_id']);
+    $tag      = mysqli_real_escape_string($conn, $_POST['asset_tag']);
+    $serial   = mysqli_real_escape_string($conn, $_POST['serial_number']);
+    $model    = mysqli_real_escape_string($conn, $_POST['brand_model']);
+    $location = mysqli_real_escape_string($conn, $_POST['location']);
+    $status   = mysqli_real_escape_string($conn, $_POST['status']);
 
-        $old_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$asset_id'");
-        $old_data  = mysqli_fetch_assoc($old_query);
-
-        $update_query = "UPDATE assets SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
-
-        if (mysqli_query($conn, $update_query)) {
-
-            logAudit($conn, 'UPDATE_ASSET', 'asset', $asset_id, $old_data, [
-                'asset_tag'     => $tag,
-                'serial_number' => $serial,
-                'brand_model'   => $model,
-                'location'      => $location,
-                'status'        => $status,
-            ]);
-            header("Location: view_inventory.php?msg=success_update");
-            exit();
-        }
+    // Check duplicate Asset TAG (exclude current asset)
+    $check_tag = mysqli_query($conn, "SELECT id FROM assets WHERE asset_tag = '$tag' AND id != '$asset_id'");
+    if (mysqli_num_rows($check_tag) > 0) {
+        header("Location: view_inventory.php?msg=error_duplicate_tag");
+        exit();
     }
 
-    if (isset($_POST['save_asset'])) {
-        $serial    = mysqli_real_escape_string($conn, $_POST['serial_number']);
-        $model     = mysqli_real_escape_string($conn, $_POST['brand_model']);
-        $type      = mysqli_real_escape_string($conn, $_POST['type']);
-        $loc       = mysqli_real_escape_string($conn, $_POST['location']); // This is now an ID
-        $date      = mysqli_real_escape_string($conn, $_POST['date']);
-        $status    = mysqli_real_escape_string($conn, $_POST['status']);
-        $asset_tag = ! empty($_POST['manual_tag']) ? mysqli_real_escape_string($conn, $_POST['manual_tag']) : "AST-" . strtoupper(substr($type, 0, 1)) . "-" . rand(1000, 9999);
-
-        $insert = "INSERT INTO assets (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
-
-        if (mysqli_query($conn, $insert)) {
-            $new_asset_id = mysqli_insert_id($conn);
-
-            logAudit($conn, 'ADD_ASSET', 'asset', $new_asset_id, null, [
-                'inventory_date' => $date,
-                'asset_tag'      => $asset_tag,
-                'serial_number'  => $serial,
-                'brand_model'    => $model,
-                'asset_type'     => $type,
-                'location'       => $loc,
-                'status'         => $status,
-            ]);
-            header("Location: view_inventory.php?msg=success_create");
-            exit();
-        }
+    // Check duplicate SERIAL NUMBER (exclude current asset)
+    $check_serial = mysqli_query($conn, "SELECT id FROM assets WHERE serial_number = '$serial' AND id != '$asset_id'");
+    if (mysqli_num_rows($check_serial) > 0) {
+        header("Location: view_inventory.php?msg=error_duplicate_serial");
+        exit();
     }
+
+    $old_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$asset_id'");
+    $old_data  = mysqli_fetch_assoc($old_query);
+
+    $update_query = "UPDATE assets SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
+
+    if (mysqli_query($conn, $update_query)) {
+        logAudit($conn, 'UPDATE_ASSET', 'asset', $asset_id, $old_data, [
+            'asset_tag'     => $tag,
+            'serial_number' => $serial,
+            'brand_model'   => $model,
+            'location'      => $location,
+            'status'        => $status,
+        ]);
+        header("Location: view_inventory.php?msg=success_update");
+        exit();
+    }
+}
+
+// ==========================================
+// SAVE NEW ASSET
+// ==========================================
+if (isset($_POST['save_asset'])) {
+    $serial    = mysqli_real_escape_string($conn, $_POST['serial_number']);
+    $model     = mysqli_real_escape_string($conn, $_POST['brand_model']);
+    $type      = mysqli_real_escape_string($conn, $_POST['type']);
+    $loc       = mysqli_real_escape_string($conn, $_POST['location']);
+    $date      = mysqli_real_escape_string($conn, $_POST['date']);
+    $status    = mysqli_real_escape_string($conn, $_POST['status']);
+    
+    // Generate or use manual asset tag
+    $asset_tag = ! empty($_POST['manual_tag']) 
+        ? mysqli_real_escape_string($conn, $_POST['manual_tag']) 
+        : "AST-" . strtoupper(substr($type, 0, 1)) . "-" . rand(1000, 9999);
+
+    // Check duplicate Asset TAG
+    $check_tag = mysqli_query($conn, "SELECT id FROM assets WHERE asset_tag = '$asset_tag'");
+    if (mysqli_num_rows($check_tag) > 0) {
+        header("Location: view_inventory.php?msg=error_duplicate_tag");
+        exit();
+    }
+
+    // Check duplicate SERIAL NUMBER
+    $check_serial = mysqli_query($conn, "SELECT id FROM assets WHERE serial_number = '$serial'");
+    if (mysqli_num_rows($check_serial) > 0) {
+        header("Location: view_inventory.php?msg=error_duplicate_serial");
+        exit();
+    }
+
+    $insert = "INSERT INTO assets (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
+
+    if (mysqli_query($conn, $insert)) {
+        $new_asset_id = mysqli_insert_id($conn);
+
+        logAudit($conn, 'ADD_ASSET', 'asset', $new_asset_id, null, [
+            'inventory_date' => $date,
+            'asset_tag'      => $asset_tag,
+            'serial_number'  => $serial,
+            'brand_model'    => $model,
+            'asset_type'     => $type,
+            'location'       => $loc,
+            'status'         => $status,
+        ]);
+        header("Location: view_inventory.php?msg=success_create");
+        exit();
+    }
+}
 
     // for delete action
     if (isset($_GET['delete_id'])) {
@@ -479,7 +516,7 @@
                         <h3 class="fw-800 mb-4" style="color:var(--inspiro-purple)">Register New Asset</h3>
                         <div class="row g-3">
                             <div class="col-md-12">
-                                <label class="form-label-custom">Asset Tag (Leave blank for Auto)</label>
+                                <label class="form-label-custom">Asset Tag</label>
                                 <input type="text" name="manual_tag" id="in_tag" class="input-custom" placeholder="Optional custom tag">
                             </div>
                             <div class="col-md-6">
@@ -736,9 +773,23 @@
         html2pdf().set(opt).from(container).save();
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if(urlParams.get('msg') === 'success_create') Swal.fire({ icon: 'success', title: 'Asset Added!', showConfirmButton: false, timer: 1500 });
-    if(urlParams.get('msg') === 'success_update') Swal.fire({ icon: 'success', title: 'Record Updated!', showConfirmButton: false, timer: 1500 });
+   const urlParams = new URLSearchParams(window.location.search);
+
+if(urlParams.get('msg') === 'success_create') {
+    Swal.fire({ icon: 'success', title: 'Asset Added!', showConfirmButton: false, timer: 1500 });
+}
+if(urlParams.get('msg') === 'success_update') {
+    Swal.fire({ icon: 'success', title: 'Record Updated!', showConfirmButton: false, timer: 1500 });
+}
+if(urlParams.get('msg') === 'error_duplicate_tag') {
+    Swal.fire({ icon: 'error', title: 'Duplicate Asset Tag', text: 'This asset tag already exists. Please use a different tag.', showConfirmButton: false, timer: 3500 });
+}
+if(urlParams.get('msg') === 'error_duplicate_serial') {
+    Swal.fire({ icon: 'error', title: 'Duplicate Serial Number', text: 'This serial number already exists in the system.', showConfirmButton: false, timer: 3500 });
+}
+if(urlParams.get('msg') === 'success_delete') {
+    Swal.fire({ icon: 'success', title: 'Asset Deleted!', showConfirmButton: false, timer: 1500 });
+}
 
     function exportCSV() {
         let csv = [];

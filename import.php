@@ -72,7 +72,7 @@
 
 <div class="content-wrapper">
      <?php include 'header.php'; ?>
-
+     
      <div class="data-panel mb-4">
          <h4 class="fw-bold mb-3" style="color: var(--accent-purple);">Upload Asset Registry File</h4>
          <div class="row g-3 align-items-center">
