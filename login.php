@@ -71,7 +71,7 @@ if (isset($_POST['login'])) {
     <title>Login Page | Inspiro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root { --brand-purple: #2E073F; --dark-purple: #2E073F; --hover-purple: #59359a; }
+        :root { --brand-purple: #2E073F; --dark-purple: #540863; --hover-purple: #59359a; }
         body { background: var(--dark-purple); font-family: 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; }
         .login-card { border-radius: 15px; background: #ffffff; }
         .btn-purple { background-color: var(--brand-purple); color: white; border: none; font-weight: 600; }
