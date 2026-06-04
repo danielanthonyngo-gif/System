@@ -11,11 +11,72 @@ if (!isset($_SESSION['user_id'])) {
 $location = isset($_GET['location']) ? mysqli_real_escape_string($conn, $_GET['location']) : 'BDO';
 
 /**
- * FIXED QUERIES:
- * Ginagamit na ang 'client_accounts' na siyang totoong pangalan ng table sa phpMyAdmin mo.
+ * SALUHIN ANG CONFIRM DEPLOYMENT / TRANSFER (AJAX POST REQUEST)
+ */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deploy_asset') {
+    $asset_tag = mysqli_real_escape_string($conn, $_POST['asset_tag']);
+    $equipment_name = mysqli_real_escape_string($conn, $_POST['equipment_name']);
+    
+    // Saluhin ang sinalang Serial Number mula sa Ajax post request kung mayroon, kundi default sa asset tag
+    $serial_number = isset($_POST['serial_number']) ? mysqli_real_escape_string($conn, $_POST['serial_number']) : $asset_tag;
+    
+    // Kunin ang account_id para sa kasalukuyang lokasyon
+    $loc_query = mysqli_query($conn, "SELECT account_id FROM client_accounts WHERE client_name = '$location' LIMIT 1");
+    $loc_row = mysqli_fetch_assoc($loc_query);
+    $location_id = $loc_row['account_id'] ?? 0;
+
+    if (!empty($asset_tag) && !empty($equipment_name) && $location_id > 0) {
+        
+        // -------------------------------------------------------------
+        // REVISED VALIDATION AT AUTOMATIC TRANSFER LOGIC
+        // -------------------------------------------------------------
+        $check_duplicate = mysqli_query($conn, "SELECT location, asset_tag, serial_number FROM assets WHERE asset_tag = '$asset_tag' OR serial_number = '$serial_number' LIMIT 1");
+        
+        if (mysqli_num_rows($check_duplicate) > 0) {
+            $existing_asset = mysqli_fetch_assoc($check_duplicate);
+            
+            // KUNG NANDITO NA SA KASALUKUYANG AREA: I-block para maiwasan ang double deployment
+            if ($existing_asset['location'] == $location_id) {
+                echo json_encode(['status' => 'error', 'message' => ' This Asset is already deployed in this location!']);
+                exit();
+            } else {
+                // KUNG NASA IBANG AREA: I-update ang location at pangalan papunta sa kasalukuyang area (Auto-Transfer)
+                $update_query = "UPDATE assets 
+                                 SET location = '$location_id', 
+                                     brand_model = '$equipment_name', 
+                                     status = 'Active' 
+                                 WHERE asset_tag = '$asset_tag' OR serial_number = '$serial_number'";
+                
+                if (mysqli_query($conn, $update_query)) {
+                    echo json_encode(['status' => 'success', 'message' => 'This asset has been successfully transferred to this location!']);
+                } else {
+                    echo json_encode(['status' => 'error', 'message' => 'Transfer Error: ' . mysqli_error($conn)]);
+                }
+                exit();
+            }
+        }
+        // -------------------------------------------------------------
+
+        // KUNG WALA PA SA DATABASE: Mag-insert ng bagong asset record
+        $insert_query = "INSERT INTO assets (asset_tag, brand_model, location, status, asset_type, serial_number) 
+                         VALUES ('$asset_tag', '$equipment_name', '$location_id', 'Active', 'Laptop', '$serial_number')";
+        
+        if (mysqli_query($conn, $insert_query)) {
+            echo json_encode(['status' => 'success', 'message' => 'Asset deployed successfully!']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . mysqli_error($conn)]);
+        }
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Please fill in all required fields.']);
+    }
+    exit(); 
+}
+
+/**
+ * FIXED QUERIES
  */
 
-// 1. Stats Query - Bilangin ang active assets para sa partikular na client name gamit ang JOIN
+// 1. Stats Query - Bilangin ang active assets para sa lokasyon gamit ang JOIN
 $active_query = mysqli_query($conn, "
     SELECT COUNT(a.id) as t 
     FROM assets a 
@@ -32,8 +93,6 @@ $assets = mysqli_query($conn, "
     WHERE acc.client_name = '$location'");
 
 $current_page = 'view_area.php'; 
-
-// TUKUYIN KUNG EMBEDDED LAYOUT (NASA LOOB NG MODAL POPUP)
 $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
 ?>
 
@@ -48,6 +107,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     
     <style>
         :root { 
@@ -151,6 +211,11 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             align-items: center; justify-content: center; font-weight: 800;
         }
 
+        .swal2-popup {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            border-radius: 20px !important;
+        }
+
         @media (max-width: 992px) {
             .content-wrapper { margin-left: 0; padding: 1rem; }
             .glass-header { margin-top: 50px; } 
@@ -169,19 +234,13 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             padding: 15px 5px !important; 
             min-height: auto !important;
         }
-        body {
-            background-color: transparent !important;
-        }
+        body { background-color: transparent !important; }
     </style>
     <?php endif; ?>
 </head>
 <body>
 
-    <?php 
-        if (!$is_embed) {
-            include 'aside.php'; 
-        }
-    ?>
+    <?php if (!$is_embed) { include 'aside.php'; } ?>
     
     <div class="content-wrapper" style="<?php echo $is_embed ? 'margin-left: 0 !important;' : ''; ?>">
         
@@ -272,9 +331,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                                     <div class="text-muted small fw-600"><?php echo htmlspecialchars($row['serial_number']); ?></div>
                                 </td>
                                 <td><span class="fw-700 text-muted"><?php echo htmlspecialchars($row['asset_type'] ?? 'N/A'); ?></span></td>
-                                
                                 <td><span class="badge-location"><?php echo htmlspecialchars($row['client_name']); ?></span></td>
-                                
                                 <td class="text-center">
                                     <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-800" style="font-size: 0.7rem;">PULLOUT</button>
                                 </td>
@@ -294,7 +351,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
                 <div class="modal-header border-0 p-4 pb-0">
-                    <h5 class="modal-title fw-800"><i class="bi bi-qr-code-scan me-2 text-primary"></i>Deploy New Asset</h5>
+                    <h5 class="modal-title fw-800"><i class="bi bi-qr-code-scan me-2 text-primary"></i>Scan & Deploy Asset</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopScanner()"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -314,14 +371,14 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                             <form id="deployForm">
                                 <div class="mb-3">
                                     <label class="form-label small fw-800 text-muted">ASSET TAG / SERIAL</label>
-                                    <input type="text" class="form-control bg-light fw-800 border-0 p-3 rounded-4" id="assetTag" readonly placeholder="Scan result...">
+                                    <input type="text" class="form-control bg-light fw-800 border-0 p-3 rounded-4" id="assetTag" placeholder="Scan result...">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small fw-800 text-muted">EQUIPMENT NAME</label>
                                     <input type="text" class="form-control p-3 rounded-4 border-1" id="equipmentName" placeholder="e.g. Dell Latitude 3420">
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small fw-800 text-muted">LOCATION</label>
+                                    <label class="form-label small fw-800 text-muted">CURRENT TARGET AREA</label>
                                     <input type="text" class="form-control bg-light p-3 border-0 rounded-4 fw-800 text-primary" value="<?php echo htmlspecialchars($location); ?>" readonly>
                                 </div>
                             </form>
@@ -330,7 +387,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                 </div>
                 <div class="modal-footer border-0 p-4 pt-0">
                     <button type="button" class="btn btn-light fw-800 px-4" data-bs-dismiss="modal" onclick="stopScanner()">Cancel</button>
-                    <button type="button" class="btn btn-purple fw-800 px-5 shadow">Confirm Deployment</button>
+                    <button type="button" id="btnConfirmDeployment" class="btn btn-purple fw-800 px-5 shadow">Confirm Deployment</button>
                 </div>
             </div>
         </div>
@@ -338,6 +395,8 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script>
         let currentFilterValue = 'All';
 
@@ -387,13 +446,39 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                 try {
                     document.getElementById("reader-placeholder").classList.add('d-none');
                     await html5QrCode.start({ facingMode: currentFacingMode }, { fps: 10, qrbox: 250 }, (text) => {
-                        document.getElementById('assetTag').value = text;
+                        let cleanTag = text.trim();
+                        let cleanModel = "";
+                        let cleanSerial = "";
+
+                        if (text.includes('|')) {
+                            let segments = text.split('|');
+                            segments.forEach(segment => {
+                                let parts = segment.split(':');
+                                if (parts.length >= 2) {
+                                    let key = parts[0].toUpperCase().trim();
+                                    let val = parts[1].trim();
+
+                                    if (key.includes("TAG")) cleanTag = val;
+                                        else if (key.includes("MODEL")) cleanModel = val.replace(/\(\)/g, '').trim(); 
+                                        else if (key.includes("SN") || key.includes("SERIAL")) cleanSerial = val;
+                                }
+                            });
+                        }
+
+                        document.getElementById('assetTag').value = cleanTag;
+                        if (cleanModel !== "" && document.getElementById('equipmentName')) {
+                            document.getElementById('equipmentName').value = cleanModel;
+                        }
+                        document.getElementById('assetTag').setAttribute('data-extracted-sn', cleanSerial || cleanTag);
+
                         if (navigator.vibrate) navigator.vibrate(100);
                         stopScanner();
                     });
                     isScanning = true;
                     document.getElementById("btnPowerText").innerText = "Stop";
-                } catch (err) { alert("Camera Error: " + err); }
+                } catch (err) { 
+                    Swal.fire({ icon: 'error', title: 'Camera Error', text: err });
+                }
             } else { stopScanner(); }
         }
 
@@ -410,6 +495,72 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
             if (isScanning) { await stopScanner(); toggleCamera(); }
         }
+
+        // AJAX POST PROCESS (HANDLES DEPLOYMENT AND AUTO-TRANSFER)
+        document.getElementById('btnConfirmDeployment').addEventListener('click', function () {
+            let assetTag = document.getElementById('assetTag').value.trim();
+            let equipmentName = document.getElementById('equipmentName').value.trim();
+
+            if (assetTag === "" || equipmentName === "") {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Incomplete Fields',
+                    text: 'Please fill in all required fields.',
+                    confirmButtonColor: '#7A1CAC'
+                });
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append('action', 'deploy_asset');
+            formData.append('asset_tag', assetTag);
+            formData.append('equipment_name', equipmentName);
+            
+            let extractedSN = document.getElementById('assetTag').getAttribute('data-extracted-sn') || assetTag;
+            formData.append('serial_number', extractedSN);
+
+            Swal.fire({
+                title: 'Processing Request...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: data.message,
+                        confirmButtonColor: '#7A1CAC',
+                        timer: 2000,
+                        timerProgressBar: true
+                    }).then(() => {
+                        location.reload(); 
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Action Denied',
+                        text: data.message,
+                        confirmButtonColor: '#2E073F'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'System Error',
+                    text: 'May nagka-problema sa pag-send ng data.',
+                    confirmButtonColor: '#2E073F'
+                });
+            });
+        });
     </script>
 </body>
 </html>

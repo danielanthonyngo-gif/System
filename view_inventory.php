@@ -341,33 +341,37 @@ if (isset($_POST['save_asset'])) {
 <div class="content-wrapper">
      <?php include 'header.php'; ?>
 
+    <!-- METRIC CARDS -->
     <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="metric-card card-active">
-            <span class="fw-bold small">ACTIVE</span>
-            <span class="metric-val fw-bolder"><?php echo $count_active; ?></span>
+        <div class="col-md-4">
+            <div class="metric-card card-active">
+                <span class="fw-bold small">ACTIVE</span>
+                <span class="metric-val fw-bolder"><?php echo $count_active; ?></span>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="metric-card card-replacement">
+                <span class="fw-bold small">REPLACEMENT</span>
+                <span class="metric-val fw-bolder"><?php echo $count_replacement; ?></span>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="metric-card card-disposal">
+                <span class="fw-bold small">FOR DISPOSAL</span>
+                <span class="metric-val fw-bolder"><?php echo $count_disposal; ?></span>
+            </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="metric-card card-replacement">
-            <span class="fw-bold small">REPLACEMENT</span>
-            <span class="metric-val fw-bolder"><?php echo $count_replacement; ?></span>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="metric-card card-disposal">
-            <span class="fw-bold small">FOR DISPOSAL</span>
-            <span class="metric-val fw-bolder"><?php echo $count_disposal; ?></span>
-        </div>
-    </div>
-</div>
-    <div class="data-panel">
-        <div class="row g-3 mb-4 align-items-center">
+
+    <!-- ACTION ROW (SEARCH, FILTER, CONTROLS) -->
+    <div class="data-panel mb-4">
+        <div class="row g-3 align-items-center">
+            <!-- Left Side: Search & Filters -->
             <div class="col-md-7">
-                <form method="GET" id="filterForm" class="d-flex gap-3">
-                    <div class="position-relative">
+                <form method="GET" id="filterForm" class="d-flex gap-3 m-0">
+                    <div class="position-relative flex-grow-1">
                         <input type="text" name="search" class="form-control border-0 bg-light p-3 ps-5 rounded-4 shadow-sm"
                             placeholder="Search Tag, Model, or Serial..." value="<?php echo htmlspecialchars($search); ?>">
 
@@ -383,54 +387,67 @@ if (isset($_POST['save_asset'])) {
                         </button>
                     </div>
 
-                    <input type="hidden" name="status_filter" id="status_filter_input" value="<?php echo $filter_status; ?>">
-                    <input type="hidden" name="type_filter" id="type_filter_input" value="<?php echo $filter_type; ?>">
+                    <input type="hidden" name="status_filter" id="status_filter_input" value="<?php echo htmlspecialchars($filter_status); ?>">
+                    <input type="hidden" name="type_filter" id="type_filter_input" value="<?php echo htmlspecialchars($filter_type); ?>">
+                    <input type="hidden" name="page" id="page_input" value="<?php echo isset($_GET['page']) ? (int)$_GET['page'] : 1; ?>">
 
                     <div class="dropdown filter-dropdown">
                         <button class="btn btn-filter dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
                             <i class="fas fa-filter text-primary"></i>
-                            Filter:<?php
-                                       if (! empty($filter_status)) {
-                                           echo $filter_status;
-                                       } elseif (! empty($filter_type)) {
-                                           echo $filter_type;
-                                       } else {
-                                           echo "All";
-                                       }
-
-                                   ?>
+                            Filter: <?php
+                                $labels = [];
+                                if (!empty($filter_type)) { $labels[] = $filter_type; }
+                                if (!empty($filter_status)) { $labels[] = $filter_status; }
+                                echo !empty($labels) ? implode(' + ', $labels) : 'All';
+                            ?>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><h6 class="dropdown-header">By Status</h6></li>
+                            <li><h6 class="dropdown-header">By Type</h6></li>
                             <li><a class="dropdown-item <?php echo $filter_type == 'Laptop' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'Laptop')">Laptops</a></li>
                             <li><a class="dropdown-item <?php echo $filter_type == 'Desktop' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'Desktop')">Desktops</a></li>
                             <li><a class="dropdown-item <?php echo $filter_type == 'Monitor' ? 'active' : ''; ?>" href="#" onclick="applyFilter('type', 'Monitor')">Monitors</a></li>
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            
+                            <li><h6 class="dropdown-header">By Status</h6></li>
+                            <li><a class="dropdown-item <?php echo $filter_status == 'Active' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Active')">Active</a></li>
+                            <li><a class="dropdown-item <?php echo $filter_status == 'Replacement' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Replacement')">Replacement</a></li>
+                            <li><a class="dropdown-item <?php echo $filter_status == 'For Disposal' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'For Disposal')">Disposal</a></li>
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="applyFilter('clear', '')">Clear All Filters</a></li>
                         </ul>
                     </div>
                 </form>
             </div>
-            <div class="col-md-5 text-end">
-            <button class="btn p-3 px-4 rounded-4 fw-bold me-2"
-                    style="background-color: #6f42c1; color: #ffffff !important; border: none;"
-                    data-bs-toggle="modal"
-                    data-bs-target="#createItemModal">
-                <i class="fas fa-plus me-2"></i>New Asset
-            </button>
 
-            <div class="dropdown d-inline-block">
-                <button class="btn btn-dark p-3 px-4 rounded-4 fw-bold dropdown-toggle"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                    <i class="fas fa-file-export me-2"></i>Export
+            <!-- Right Side: CRUD & Export Controls -->
+            <div class="col-md-5 text-end">
+                <button class="btn p-3 px-4 rounded-4 fw-bold me-2"
+                        style="background-color: #6f42c1; color: #ffffff !important; border: none;"
+                        data-bs-toggle="modal"
+                        data-bs-target="#createItemModal">
+                    <i class="fas fa-plus me-2"></i>New Asset
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <li><a class="dropdown-item" href="#" onclick="exportInventoryPDF()"><i class="fas fa-file-pdf me-2 text-danger"></i>Export as PDF</a></li>
-                    <li><a class="dropdown-item" href="#" onclick="exportCSV()"><i class="fas fa-file-csv me-2 text-success"></i>Export as CSV</a></li>
-                </ul>
+
+                <div class="dropdown d-inline-block">
+                    <button class="btn btn-dark p-3 px-4 rounded-4 fw-bold dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="fas fa-file-export me-2"></i>Export
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><a class="dropdown-item" href="#" onclick="exportInventoryPDF()"><i class="fas fa-file-pdf me-2 text-danger"></i>Export as PDF</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportCSV()"><i class="fas fa-file-csv me-2 text-success"></i>Export as CSV</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
-    
+    </div>
+
+    <!-- INVENTORY TABLE PANEL -->
+    <div class="data-panel">
         <div id="table-to-export">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -449,36 +466,58 @@ if (isset($_POST['save_asset'])) {
                     </thead>
                     <tbody>
                         <?php
-                            $sql = "SELECT * FROM `assets` as a LEFT JOIN client_accounts as b ON a.location=b.account_id";
-                            if (! empty($filter_status)) {$f  = mysqli_real_escape_string($conn, $filter_status);
-                                $sql          .= " AND status = '$f'";}
-                            if (! empty($filter_type)) {$t  = mysqli_real_escape_string($conn, $filter_type);
-                                $sql          .= " AND asset_type = '$t'";}
-                            if (! empty($search)) {$s  = mysqli_real_escape_string($conn, $search);
-                                $sql          .= " AND (asset_tag LIKE '%$s%' OR brand_model LIKE '%$s%' OR serial_number LIKE '%$s%')";}
-                            $sql .= " ORDER BY a.inventory_date DESC";
+                            // PAGINATION INITIALIZATION
+                            $limit = 10; 
+                            $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+                            $offset = ($page - 1) * $limit;
+
+                            $where_clauses = [];
+                            if (! empty($filter_status)) {
+                                $f = mysqli_real_escape_string($conn, $filter_status);
+                                $where_clauses[] = "status = '$f'";
+                            }
+                            if (! empty($filter_type)) {
+                                $t = mysqli_real_escape_string($conn, $filter_type);
+                                $where_clauses[] = "asset_type = '$t'";
+                            }
+                            if (! empty($search)) {
+                                $s = mysqli_real_escape_string($conn, $search);
+                                $where_clauses[] = "(asset_tag LIKE '%$s%' OR brand_model LIKE '%$s%' OR serial_number LIKE '%$s%')";
+                            }
+
+                            $where_sql = count($where_clauses) > 0 ? "WHERE " . implode(" AND ", $where_clauses) : "";
+
+                            // Count total items
+                            $total_query = "SELECT COUNT(*) as total FROM `assets` as a LEFT JOIN client_accounts as b ON a.location=b.account_id $where_sql";
+                            $total_res = mysqli_query($conn, $total_query);
+                            $total_records = mysqli_fetch_assoc($total_res)['total'];
+                            $total_pages = ceil($total_records / $limit);
+
+                            // Get chunk of data
+                            $sql = "SELECT * FROM `assets` as a LEFT JOIN client_accounts as b ON a.location=b.account_id $where_sql ORDER BY a.inventory_date DESC LIMIT $limit OFFSET $offset";
                             $res = mysqli_query($conn, $sql);
 
-                            while ($row = mysqli_fetch_assoc($res)):
-                                $badge = ($row['status'] == 'For Disposal') ? 'st-disposal' : (($row['status'] == 'Replacement') ? 'st-replacement' : 'st-active');
+                            if (mysqli_num_rows($res) > 0):
+                                while ($row = mysqli_fetch_assoc($res)):
+                                    $badge = ($row['status'] == 'For Disposal') ? 'st-disposal' : (($row['status'] == 'Replacement') ? 'st-replacement' : 'st-active');
                         ?>
                         <tr>
                             <td class="small fw-600"><?php echo date('M d, Y', strtotime($row['inventory_date'])); ?></td>
                             <td><span class="badge bg-light text-dark fw-bold border"><?php echo $row['asset_tag']; ?></span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-primary border-0 view-qr-btn" id="view-qr-btn-<?php echo $row['id']; ?>"
-                                        data-tag="<?php echo $row['asset_tag']; ?>"
-                                        data-serial="<?php echo $row['serial_number']; ?>"
-                                        data-model="<?php echo $row['brand_model']; ?>"
-                                        data-date="<?php echo date('M d, Y', strtotime($row['inventory_date'])); ?>"
-                                        data-type="<?php echo $row['asset_type']; ?>"
-                                        data-year="<?php echo $row['year_model']; ?>"
-                                        data-loc="<?php echo htmlspecialchars($row['client_name']); ?>"
-                                        data-status="<?php echo $row['status']; ?>"
-                                        data-qr="TAG: <?php echo $row['asset_tag']; ?> | TYPE: <?php echo $row['asset_type']; ?> | MODEL: <?php echo $row['brand_model']; ?> (<?php echo $row['year_model']; ?>) | SN: <?php echo $row['serial_number']; ?> | LOC: <?php echo htmlspecialchars($row['client_name']); ?> | STATUS: <?php echo $row['status']; ?> | DATE: <?php echo $row['inventory_date']; ?>">
-                                        <i class="fas fa-qrcode"></i>
-                                    </button>
-                                </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary border-0 view-qr-btn" id="view-qr-btn-<?php echo $row['id']; ?>"
+                                    data-tag="<?php echo $row['asset_tag']; ?>"
+                                    data-serial="<?php echo $row['serial_number']; ?>"
+                                    data-model="<?php echo $row['brand_model']; ?>"
+                                    data-date="<?php echo date('M d, Y', strtotime($row['inventory_date'])); ?>"
+                                    data-type="<?php echo $row['asset_type']; ?>"
+                                    data-year="<?php echo $row['year_model']; ?>"
+                                    data-loc="<?php echo htmlspecialchars($row['client_name']); ?>"
+                                    data-status="<?php echo $row['status']; ?>"
+                                    data-qr="TAG: <?php echo $row['asset_tag']; ?> | TYPE: <?php echo $row['asset_type']; ?> | MODEL: <?php echo $row['brand_model']; ?> (<?php echo $row['year_model']; ?>) | SN: <?php echo $row['serial_number']; ?> | LOC: <?php echo htmlspecialchars($row['client_name']); ?> | STATUS: <?php echo $row['status']; ?> | DATE: <?php echo $row['inventory_date']; ?>">
+                                    <i class="fas fa-qrcode"></i>
+                                </button>
+                            </td>
                             <td>
                                 <div class="fw-bold text-dark"><?php echo $row['brand_model']; ?></div>
                                 <div class="small text-muted">SN: <?php echo $row['serial_number']; ?></div>
@@ -486,40 +525,81 @@ if (isset($_POST['save_asset'])) {
                             <td class="small"><?php echo $row['client_name']; ?></td>
                             <td><span class="status-badge <?php echo $badge; ?>"><?php echo $row['status']; ?></span></td>
 
-                             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
-                                <td class="no-export text-center">
-                            <button class="btn btn-sm btn-outline-secondary border-0 editBtn"
-                                data-id="<?php echo $row['id']; ?>"
-                                data-tag="<?php echo $row['asset_tag']; ?>"
-                                data-serial="<?php echo $row['serial_number']; ?>"
-                                data-model="<?php echo $row['brand_model']; ?>"
-                                data-loc="<?php echo $row['location']; ?>"
-                                data-status="<?php echo $row['status']; ?>">
-                                <i class="fas fa-edit"></i>
-                            </button>
+                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'Administrator'): ?>
+                            <td class="no-export text-center">
+                                <button class="btn btn-sm btn-outline-secondary border-0 editBtn"
+                                    data-id="<?php echo $row['id']; ?>"
+                                    data-tag="<?php echo $row['asset_tag']; ?>"
+                                    data-serial="<?php echo $row['serial_number']; ?>"
+                                    data-model="<?php echo $row['brand_model']; ?>"
+                                    data-loc="<?php echo $row['location']; ?>"
+                                    data-status="<?php echo $row['status']; ?>">
+                                    <i class="fas fa-edit"></i>
+                                </button>
 
-                            <button class="btn btn-sm btn-outline-danger border-0 ms-1 deleteBtn"
-                                data-id="<?php echo $row['id']; ?>"
-                                data-tag="<?php echo $row['asset_tag']; ?>">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
+                                <button class="btn btn-sm btn-outline-danger border-0 ms-1 deleteBtn"
+                                    data-id="<?php echo $row['id']; ?>"
+                                    data-tag="<?php echo $row['asset_tag']; ?>">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
                             <?php endif; ?>
                         </tr>
-                        <?php endwhile; ?>
+                        <?php endwhile; else: ?>
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No assets found matching the criteria.</td>
+                        </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- PAGINATION INTERFACE -->
+        <?php if ($total_pages > 1): ?>
+        <div class="d-flex justify-content-between align-items-center mt-3 px-3 no-export">
+            <div class="small text-muted">
+                Showing <b><?php echo $offset + 1; ?></b> to <b><?php echo min($offset + $limit, $total_records); ?></b> of <b><?php echo $total_records; ?></b> Assets
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                        <a class="page-link rounded-3 me-1" href="#" onclick="changePage(<?php echo $page - 1; ?>)">Previous</a>
+                    </li>
+                    <?php 
+                    for ($i = 1; $i <= $total_pages; $i++): 
+                        if ($i == 1 || $i == $total_pages || ($i >= $page - 2 && $i <= $page + 2)):
+                    ?>
+                        <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
+                            <a class="page-link rounded-3 me-1 <?php echo ($page == $i) ? 'bg-primary border-primary text-white' : ''; ?>" href="#" onclick="changePage(<?php echo $i; ?>)"><?php echo $i; ?></a>
+                        </li>
+                    <?php 
+                        elseif ($i == 2 || $i == $total_pages - 1):
+                            echo '<li class="page-item disabled"><span class="px-2">...</span></li>';
+                        endif;
+                    endfor; 
+                    ?>
+                    <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
+                        <a class="page-link rounded-3" href="#" onclick="changePage(<?php echo $page + 1; ?>)">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
+<!-- =========================================================
+     MODALS SECTION
+     ========================================================= -->
+
+<!-- CREATE MODAL -->
 <div class="modal fade" id="createItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
             <form action="" method="POST" class="p-4">
                 <div class="row">
-                    <div class="col-md-8 pe-4">
+                    <div class="col-md-12 pe-4">
                         <h3 class="fw-800 mb-4" style="color:var(--inspiro-purple)">Register New Asset</h3>
                         <div class="row g-3">
                             <div class="col-md-12">
@@ -568,25 +648,23 @@ if (isset($_POST['save_asset'])) {
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4 d-flex flex-column align-items-center justify-content-center border-start bg-light rounded-end-5">
-                        <div class="text-center p-4">
-                            <label class="form-label-custom mb-3">Live QR Preview</label>
-                            <div class="bg-white p-3 rounded-4 shadow-sm">
-                                <canvas id="modal_qr_preview"></canvas>
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-light px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" id="saveAssetBtn" data-role='<?php echo $_SESSION['role'] ?>' name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
                             </div>
-                            <p class="small text-muted mt-3">QR will auto-update as you type.</p>
                         </div>
                     </div>
                 </div>
                 <div class="text-end mt-4">
-                    <button type="button"  class="btn btn-light px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" id="saveAssetBtn" data-role='<?php echo $_SESSION['role'] ?>'  name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
+                    <button type="button" class="btn btn-light px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="saveAssetBtn" data-role='<?php echo $_SESSION['role'] ?>' name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- EDIT MODAL -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
@@ -634,6 +712,7 @@ if (isset($_POST['save_asset'])) {
     </div>
 </div>
 
+<!-- QR VIEW MODAL -->
 <div class="modal fade" id="qrViewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
@@ -644,13 +723,19 @@ if (isset($_POST['save_asset'])) {
                 </div>
                 <p class="mb-1"><strong id="qrViewTag"></strong></p>
                 <p class="text-muted small mb-1" id="qrViewModel"></p>
-                <p class="text-muted small" id="qrViewSN"></p>
-                <button type="button" class="btn btn-secondary rounded-4 mt-2" data-bs-dismiss="modal">Close</button>
+                <p class="text-muted small mb-1" id="qrViewSN"></p>
+                <div class="text-start border-top pt-2 mt-2 small text-muted">
+                    <div><b>Type:</b> <span id="qrViewType"></span></div>
+                    <div><b>Client:</b> <span id="qrViewLoc"></span></div>
+                    <div><b>Status:</b> <span id="qrViewStatus"></span></div>
+                </div>
+                <button type="button" class="btn btn-secondary rounded-4 w-100 mt-3" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- QR SCANNER MODAL -->
 <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4">
@@ -669,19 +754,36 @@ if (isset($_POST['save_asset'])) {
     </div>
 </div>
 
+<!-- =========================================================
+     SCRIPTS SECTION
+     ========================================================= -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<!-- Siguraduhing may QRious library ka rin na kasama sa head para sa generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
-    // 1. FILTER FUNCTION
+    // 1. FILTER & PAGINATION FUNCTIONS
     function applyFilter(type, value) {
+        if (window.event) window.event.preventDefault();
         if (type === 'status') document.getElementById('status_filter_input').value = value;
         if (type === 'type') document.getElementById('type_filter_input').value = value;
+        if (type === 'clear') {
+            document.getElementById('status_filter_input').value = '';
+            document.getElementById('type_filter_input').value = '';
+        }
+        document.getElementById('page_input').value = 1; // Balik sa page 1 pag nag-filter
+        document.getElementById('filterForm').submit();
+    }
+
+    function changePage(pageNum) {
+        if (window.event) window.event.preventDefault();
+        document.getElementById('page_input').value = pageNum;
         document.getElementById('filterForm').submit();
     }
     
-    // Delete Button
+    // Delete Button Click
     $('.deleteBtn').on('click', function() {
         var assetId = $(this).data('id');
         var assetTag = $(this).data('tag');
@@ -719,12 +821,17 @@ if (isset($_POST['save_asset'])) {
         const tag = document.getElementById('in_tag').value || "AST-PREVIEW";
         const serial = document.getElementById('in_serial').value || "---";
         const qrContent = `TAG: ${tag} | SN: ${serial}`;
-        new QRious({ element: document.getElementById('modal_qr_preview'), value: qrContent, size: 200, level: 'M' });
+        const canvas = document.getElementById('modal_qr_preview');
+        if(canvas) {
+            new QRious({ element: canvas, value: qrContent, size: 200, level: 'M' });
+        }
     }
 
-    ['in_tag', 'in_serial'].forEach(id => {
-        document.getElementById(id).addEventListener('input', updateModalQR);
-    });
+    if(document.getElementById('in_tag')) {
+        ['in_tag', 'in_serial'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateModalQR);
+        });
+    }
 
     $(document).ready(function() {
         generateTableQRs();
@@ -737,11 +844,7 @@ if (isset($_POST['save_asset'])) {
         $('#edit_tag').val($(this).data('tag'));
         $('#edit_serial').val($(this).data('serial'));
         $('#edit_model').val($(this).data('model'));
-
-        // Set the dropdown selection based on the stored ID
-        var storedLocId = $(this).data('loc');
-        $('#edit_loc').val(storedLocId); // This selects the correct option in the dropdown
-
+        $('#edit_loc').val($(this).data('loc'));
         $('#edit_status').val($(this).data('status'));
         new bootstrap.Modal(document.getElementById('editModal')).show();
     });
@@ -780,45 +883,22 @@ if (isset($_POST['save_asset'])) {
         html2pdf().set(opt).from(container).save();
     }
 
-const urlParams = new URLSearchParams(window.location.search);
-
-if (urlParams.get('msg') === 'success_create') {
-    
-    // Nagdagdag tayo ng || 'USER' para kung walang role, maging 'USER' ito automatic
-    var role = $('#saveAssetBtn').data('role');
-
-    // Siguraduhin din natin na walang extra spaces gamit ang .trim()
-    if (role.trim() === 'Administrator') {
-        Swal.fire({ 
-            icon: 'success', 
-            title: 'Asset Added!', 
-            text: 'The new asset has been successfully added to the inventory.', 
-            showConfirmButton: false, 
-            timer: 6000 
-        });
-    } else {
-        Swal.fire({ 
-            icon: 'success', 
-            title: 'Asset Added!', 
-            text: 'Your asset addition request has been submitted and is pending approval.', 
-            showConfirmButton: false, 
-            timer: 6000 
-        });
+    // SWEETALERT ALERTS HANDLING
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('msg') === 'success_create') {
+        var role = $('#saveAssetBtn').data('role') || 'USER';
+        if (role.trim() === 'Administrator') {
+            Swal.fire({ icon: 'success', title: 'Asset Added!', text: 'The new asset has been successfully added to the inventory.', showConfirmButton: false, timer: 3000 });
+        } else {
+            Swal.fire({ icon: 'success', title: 'Asset Added!', text: 'Your asset addition request has been submitted and is pending approval.', showConfirmButton: false, timer: 3000 });
+        }
     }
-}
-if(urlParams.get('msg') === 'success_update') {
-    Swal.fire({ icon: 'success', title: 'Record Updated!', showConfirmButton: false, timer: 1500 });
-}
-if(urlParams.get('msg') === 'error_duplicate_tag') {
-    Swal.fire({ icon: 'error', title: 'Duplicate Asset Tag', text: 'This asset tag already exists. Please use a different tag.', showConfirmButton: false, timer: 3500 });
-}
-if(urlParams.get('msg') === 'error_duplicate_serial') {
-    Swal.fire({ icon: 'error', title: 'Duplicate Serial Number', text: 'This serial number already exists in the system.', showConfirmButton: false, timer: 3500 });
-}
-if(urlParams.get('msg') === 'success_delete') {
-    Swal.fire({ icon: 'success', title: 'Asset Deleted!', showConfirmButton: false, timer: 1500 });
-}
+    if(urlParams.get('msg') === 'success_update') { Swal.fire({ icon: 'success', title: 'Record Updated!', showConfirmButton: false, timer: 1500 }); }
+    if(urlParams.get('msg') === 'error_duplicate_tag') { Swal.fire({ icon: 'error', title: 'Duplicate Asset Tag', text: 'This asset tag already exists. Please use a different tag.', showConfirmButton: false, timer: 3500 }); }
+    if(urlParams.get('msg') === 'error_duplicate_serial') { Swal.fire({ icon: 'error', title: 'Duplicate Serial Number', text: 'This serial number already exists in the system.', showConfirmButton: false, timer: 3500 }); }
+    if(urlParams.get('msg') === 'success_delete') { Swal.fire({ icon: 'success', title: 'Asset Deleted!', showConfirmButton: false, timer: 1500 }); }
 
+    // CSV EXPORT
     function exportCSV() {
         let csv = [];
         let rows = document.querySelectorAll("#table-to-export table tr");
@@ -838,78 +918,46 @@ if(urlParams.get('msg') === 'success_delete') {
         a.click();
     }
 
-    // 6. QR VIEW BUTTON (Updated with e.currentTarget fix)
-    // $(document).on('click', '.view-qr-btn', function(e) {
-    //     e.preventDefault();
-    //     var $btn = $(e.currentTarget);
-    //     var tag = $btn.data('tag');
-    //     var sn = $btn.data('serial');
-    //     var model = $btn.data('model');
-    //     var qrValue = $btn.data('qr');
+    // 6. QR VIEW BUTTON CLICK TRIGGER
+    $(document).on('click', '.view-qr-btn', function(e) {
+        e.preventDefault();
+        var $btn = $(e.currentTarget);
+        
+        var tag = $btn.data('tag');
+        var sn = $btn.data('serial');
+        var model = $btn.data('model');
+        var type = $btn.data('type');
+        var year = $btn.data('year');
+        var loc = $btn.data('loc');
+        var status = $btn.data('status');
+        var qrValue = $btn.data('qr');  
+        
+        $('#qrViewTag').text(tag);
+        $('#qrViewModel').text(model + (year ? ' (' + year + ')' : ''));
+        $('#qrViewSN').text('SN: ' + sn);
+        $('#qrViewType').text(type);
+        $('#qrViewLoc').text(loc);
+        $('#qrViewStatus').text(status);
 
-    //     // Update modal content
-    //     $('#qrViewTag').text(tag);
-    //     $('#qrViewModel').text(model);
-    //     $('#qrViewSN').text('SN: ' + sn);
+        var canvas = document.getElementById('qrViewCanvas');
+        new QRious({
+            element: canvas,
+            value: qrValue,
+            size: 220,  
+            level: 'H'  
+        });
 
-    //     // Generate QR on the canvas
-    //     var canvas = document.getElementById('qrViewCanvas');
-    //     new QRious({
-    //         element: canvas,
-    //         value: qrValue,
-    //         size: 200,
-    //         level: 'H'
-    //     });
-
-    //     // Now show the modal
-    //     $('#qrViewModal').modal('show');
-    // });
-
-   $(document).on('click', '.view-qr-btn', function(e) {
-    e.preventDefault();
-    var $btn = $(e.currentTarget);
-    
-   
-    var tag = $btn.data('tag');
-    var sn = $btn.data('serial');
-    var model = $btn.data('model');
-    var date = $btn.data('date');
-    var type = $btn.data('type');
-    var year = $btn.data('year');
-    var loc = $btn.data('loc');
-    var status = $btn.data('status');
-    var qrValue = $btn.data('qr');  
-    
-    $('#qrViewTag').text(tag);
-    $('#qrViewModel').text(model + (year ? ' (' + year + ')' : ''));
-    $('#qrViewSN').text('SN: ' + sn);
-    
-    
-    $('#qrViewType').text(type);
-    $('#qrViewLoc').text(loc);
-    $('#qrViewStatus').text(status);
-
-    
-    var canvas = document.getElementById('qrViewCanvas');
-    new QRious({
-        element: canvas,
-        value: qrValue,
-        size: 220,  
-        level: 'H'  
+        $('#qrViewModal').modal('show');
     });
 
-    // Now show the modal
-    $('#qrViewModal').modal('show');
-});
-
     $(document).on('hidden.bs.modal', '#qrViewModal', function() {
-        // Clear QR when modal closes
         var canvas = document.getElementById('qrViewCanvas');
         var ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
 </script>
 
+<!-- LIVE QR SCANNER INITIALIZATION -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let html5QrCode = null;
@@ -917,64 +965,62 @@ document.addEventListener('DOMContentLoaded', function() {
     const qrScannerModal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
     const searchInput = document.querySelector('input[name="search"]');
 
-    qrScanBtn.addEventListener('click', function() {
-        qrScannerModal.show();
+    if(qrScanBtn) {
+        qrScanBtn.addEventListener('click', function() {
+            qrScannerModal.show();
 
-        // Initialize scanner when modal is shown
-        setTimeout(() => {
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("qr-reader");
-            }
-
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            };
-
-            html5QrCode.start(
-                { facingMode: "environment" }, // Use back camera
-                config,
-                (decodedText, decodedResult) => {
-
-                    searchInput.value = decodedText;
-
-                    const event = new Event('input', { bubbles: true });
-                    searchInput.dispatchEvent(event);
-
-                    const form = searchInput.closest('form');
-                    if (form) {
-                        form.submit();
-                    }
-
-                    if (html5QrCode && html5QrCode.isScanning) {
-                        html5QrCode.stop();
-                    }
-                    qrScannerModal.hide();
-
-                    const resultsDiv = document.getElementById('qr-reader-results');
-                    resultsDiv.innerHTML = '<div class="alert alert-success">✓ QR Code scanned: ' + decodedText + '</div>';
-                    setTimeout(() => {
-                        resultsDiv.innerHTML = '';
-                    }, 2000);
-                },
-                (errorMessage) => {
-                    console.log(errorMessage);
+            setTimeout(() => {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("qr-reader");
                 }
-            ).catch(err => {
-                console.error("Failed to start scanner:", err);
-                document.getElementById('qr-reader-results').innerHTML = '<div class="alert alert-danger">Unable to access camera. Please check permissions.</div>';
-            });
-        }, 500);
-    });
 
-    document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function() {
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    config,
+                    (decodedText, decodedResult) => {
+                        searchInput.value = decodedText;
+
+                        const event = new Event('input', { bubbles: true });
+                        searchInput.dispatchEvent(event);
+
+                        const form = searchInput.closest('form');
+                        if (form) {
+                            form.submit();
+                        }
+
+                        if (html5QrCode && html5QrCode.isScanning) {
+                            html5QrCode.stop();
+                        }
+                        qrScannerModal.hide();
+
+                        const resultsDiv = document.getElementById('qr-reader-results');
+                        if(resultsDiv) {
+                            resultsDiv.innerHTML = '<div class="alert alert-success">✓ QR Code scanned: ' + decodedText + '</div>';
+                        }
+                    },
+                    (errorMessage) => {
+                        // Silent log bypass para iwas console flood habang naghahanap ng frame
+                    }
+                ).catch(err => {
+                    console.error("Unable to start scanning.", err);
+                });
+            }, 500);
+        });
+    }
+
+    // Patayin ang camera kapag sinara ng user ang Scanner Modal manually
+    document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function () {
         if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop();
+            html5QrCode.stop().then(() => {
+                console.log("Scanner stopped safely.");
+            }).catch(err => console.error("Error stopping scanner: ", err));
         }
-        document.getElementById('qr-reader-results').innerHTML = '';
     });
 });
 </script>
-</body>
-</html>

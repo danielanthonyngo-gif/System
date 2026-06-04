@@ -403,24 +403,8 @@ if (isset($_POST['save_asset'])) {
                 </form>
             </div>
             <div class="col-md-5 text-end">
-            <button class="btn p-3 px-4 rounded-4 fw-bold me-2"
-                    style="background-color: #6f42c1; color: #ffffff !important; border: none;"
-                    data-bs-toggle="modal"
-                    data-bs-target="#createItemModal">
-                <i class="fas fa-plus me-2"></i>New Asset
-            </button>
 
             <div class="dropdown d-inline-block">
-                <button class="btn btn-dark p-3 px-4 rounded-4 fw-bold dropdown-toggle"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                    <i class="fas fa-file-export me-2"></i>Export
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <li><a class="dropdown-item" href="#" onclick="exportInventoryPDF()"><i class="fas fa-file-pdf me-2 text-danger"></i>Export as PDF</a></li>
-                    <li><a class="dropdown-item" href="#" onclick="exportCSV()"><i class="fas fa-file-csv me-2 text-success"></i>Export as CSV</a></li>
-                </ul>
             </div>
         </div>
     
