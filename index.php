@@ -1,5 +1,3 @@
-DASHBOARD NEW
-
 <?php
 session_start();
 include 'config.php';
@@ -28,7 +26,7 @@ if ($result && mysqli_num_rows($result) > 0) {
 $count_in_use = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
 $count_disposal = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
 $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0; 
-$count_storage = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='in_stock'"))['total'] ?? 0; //in_stock is now "In Storage"
+$count_storage = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='in_stock'"))['total'] ?? 0;
 
 // Kalkulahin ang total at percentages sa PHP para magamit sa mga charts
 $total_assets = $count_in_use + $count_disposal + $count_replacement + $count_storage;
@@ -37,38 +35,57 @@ $p_disposal = $total_assets > 0 ? round(($count_disposal / $total_assets) * 100,
 $p_replacement = $total_assets > 0 ? round(($count_replacement / $total_assets) * 100, 1) : 0;
 $p_storage = $total_assets > 0 ? round(($count_storage / $total_assets) * 100, 1) : 0;
 
-// Para sa live secondary metric (Maintenance Pool)
-$total_maintenance = $count_replacement + $count_disposal;
-
-// Dynamic Base para sa Maintenance Graph para sumunon ang alon sa kasalukuyang bilang ng maintenance assets
-$dynamic_clicks_base = $total_maintenance > 0 ? ($total_maintenance * 15) : ($total_assets * 5);
-if($dynamic_clicks_base < 100) { $dynamic_clicks_base = 1050; } // Fallback para maganda pa rin ang alon kung walang laman ang DB
-
 // --- RECENT AUDIT LOGS FOR DASHBOARD ---
 $recent_logs_query = "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 5";
 $recent_logs_result = mysqli_query($conn, $recent_logs_query);
 
-// --- AREA LOGIC FOR ALPHA AND BETA BAR GRAPHS ---
-// *Master, kung sakaling mag-0 ang count o iba ang tawag sa column ng area/site niyo, palitan lang 'yung `site=` sa loob ng function.*
-function getAssetCountByArea($conn, $areaName, $status) {
-    $query = "SELECT COUNT(*) as total FROM assets WHERE site='$areaName' AND status='$status'";
-    $result = @mysqli_query($conn, $query);
-    if ($result) {
-        $row = mysqli_fetch_assoc($result);
-        return $row['total'] ?? 0;
+// ==========================================
+// MULTI-LINE BUILDING CLIENT LOGIC
+// ==========================================
+function getBuildingClientDetailedData($conn, $building_id) {
+    $sql = "SELECT 
+                ca.client_name,
+                COUNT(a.id) as total_assets,
+                SUM(CASE WHEN a.status = 'Active' THEN 1 ELSE 0 END) as active_assets,
+                SUM(CASE WHEN a.status = 'For Disposal' THEN 1 ELSE 0 END) as disposal_assets,
+                SUM(CASE WHEN a.status = 'Replacement' THEN 1 ELSE 0 END) as replacement_assets
+            FROM client_accounts ca
+            LEFT JOIN assets a ON ca.account_id = a.location
+            WHERE ca.building_id = '$building_id'
+            GROUP BY ca.account_id, ca.client_name";
+            
+    $res = mysqli_query($conn, $sql);
+    $labels = [];
+    $active_rates = [];
+    $disposal_rates = [];
+    $replacement_rates = [];
+    
+    while($row = mysqli_fetch_assoc($res)) {
+        $labels[] = $row['client_name'];
+        $total = (int)$row['total_assets'];
+        
+        if ($total > 0) {
+            $active_rates[]      = round(((int)$row['active_assets'] / $total) * 100, 1);
+            $disposal_rates[]    = round(((int)$row['disposal_assets'] / $total) * 100, 1);
+            $replacement_rates[] = round(((int)$row['replacement_assets'] / $total) * 100, 1);
+        } else {
+            $active_rates[]      = 0;
+            $disposal_rates[]    = 0;
+            $replacement_rates[] = 0;
+        }
     }
-    return 0;
+    
+    return [
+        'labels'      => $labels, 
+        'active'      => $active_rates, 
+        'disposal'    => $disposal_rates, 
+        'replacement' => $replacement_rates
+    ];
 }
 
-$alpha_in_use      = getAssetCountByArea($conn, 'Alpha', 'Active');
-$alpha_disposal    = getAssetCountByArea($conn, 'Alpha', 'For Disposal');
-$alpha_replacement = getAssetCountByArea($conn, 'Alpha', 'Replacement');
-$alpha_storage     = getAssetCountByArea($conn, 'Alpha', 'in_stock');
-
-$beta_in_use       = getAssetCountByArea($conn, 'Beta', 'Active');
-$beta_disposal     = getAssetCountByArea($conn, 'Beta', 'For Disposal');
-$beta_replacement  = getAssetCountByArea($conn, 'Beta', 'Replacement');
-$beta_storage      = getAssetCountByArea($conn, 'Beta', 'in_stock');
+// Alpha Building (id: 1), Beta Building (id: 2)
+$alpha_line_data = getBuildingClientDetailedData($conn, 1);
+$beta_line_data  = getBuildingClientDetailedData($conn, 2);
 ?>
 
 <!DOCTYPE html>
@@ -198,7 +215,6 @@ $beta_storage      = getAssetCountByArea($conn, 'Beta', 'in_stock');
             height: 100%;
         }
 
-        /* Audit Badges Styles pulled from audit.php */
         .badge-action {
             padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.7rem;
             display: inline-block; text-align: center;
@@ -229,6 +245,7 @@ $beta_storage      = getAssetCountByArea($conn, 'Beta', 'in_stock');
   <?php include 'header.php'; ?>
     
     <div class="container-fluid p-0">
+        <!-- 1. STATUS CARDS -->
         <div class="row g-4 mb-4">
             <div class="col-md-3">
                 <a href="index_page.php?status=Active" class="text-decoration-none">
@@ -271,26 +288,8 @@ $beta_storage      = getAssetCountByArea($conn, 'Beta', 'in_stock');
             </div>
         </div>
 
+        <!-- 2. PIE CHART AT RECENT ACTIVITIES (TOP) -->
         <div class="row g-4 mb-4">
-            <div class="col-xl-6 col-lg-12">
-                <div class="chart-card">
-                    <h5 class="fw-bold mb-4" style="color: #2E073F;">Alpha Area Asset Count</h5>
-                    <div style="height: 300px;">
-                        <canvas id="alphaBarChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-6 col-lg-12">
-                <div class="chart-card">
-                    <h5 class="fw-bold mb-4" style="color: #2E073F;">Beta Area Asset Count</h5>
-                    <div style="height: 300px;">
-                        <canvas id="betaBarChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-4">
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
                     <h5 class="fw-bold mb-4" style="color: #2E073F;">Asset Distribution Breakdown</h5>
@@ -370,13 +369,138 @@ $beta_storage      = getAssetCountByArea($conn, 'Beta', 'in_stock');
                 </div>
             </div>
         </div>
+
+        <!-- 3. LINE GRAPHS KADA BUILDING -->
+        <div class="row g-4">
+            <div class="col-xl-6 col-lg-12">
+                <div class="chart-card">
+                    <h5 class="fw-bold mb-2" style="color: #2E073F;">Alpha Building Client Analysis</h5>
+                    <small class="text-muted d-block mb-4">Percentage (%) breakdown ng mga status kada client account</small>
+                    <div style="height: 320px;">
+                        <canvas id="alphaLineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6 col-lg-12">
+                <div class="chart-card">
+                    <h5 class="fw-bold mb-2" style="color: #2E073F;">Beta Building Client Analysis</h5>
+                    <small class="text-muted d-block mb-4">Percentage (%) breakdown ng mga status kada client account</small>
+                    <div style="height: 320px;">
+                        <canvas id="betaLineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // 1. PIE CHART CONFIG (Solid Pie Style)
+    const lineChartOptionsBase = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: true, position: 'top', labels: { font: { weight: '600', size: 12 }, usePointStyle: true } },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': ' + context.raw + '%';
+                    }
+                }
+            }
+        },
+        scales: {
+            y: { 
+                beginAtZero: true, 
+                max: 100, 
+                ticks: { callback: function(value) { return value + '%'; } },
+                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+            },
+            x: { grid: { display: false } }
+        }
+    };
+
+    // Alpha Line Chart
+    const alphaLineCtx = document.getElementById('alphaLineChart').getContext('2d');
+    new Chart(alphaLineCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode($alpha_line_data['labels']); ?>,
+            datasets: [
+                {
+                    label: 'In Use Rate',
+                    data: <?php echo json_encode($alpha_line_data['active']); ?>,
+                    borderColor: '#AD49E1',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#AD49E1',
+                    tension: 0.2
+                },
+                {
+                    label: 'Disposal Rate',
+                    data: <?php echo json_encode($alpha_line_data['disposal']); ?>,
+                    borderColor: '#62109F',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#62109F',
+                    tension: 0.2
+                },
+                {
+                    label: 'Replacement Rate',
+                    data: <?php echo json_encode($alpha_line_data['replacement']); ?>,
+                    borderColor: '#2E073F',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#2E073F',
+                    tension: 0.2
+                }
+            ]
+        },
+        options: lineChartOptionsBase
+    });
+
+    // Beta Line Chart
+    const betaLineCtx = document.getElementById('betaLineChart').getContext('2d');
+    new Chart(betaLineCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode($beta_line_data['labels']); ?>,
+            datasets: [
+                {
+                    label: 'In Use Rate',
+                    data: <?php echo json_encode($beta_line_data['active']); ?>,
+                    borderColor: '#AD49E1',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#AD49E1',
+                    tension: 0.2
+                },
+                {
+                    label: 'Disposal Rate',
+                    data: <?php echo json_encode($beta_line_data['disposal']); ?>,
+                    borderColor: '#62109F',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#62109F',
+                    tension: 0.2
+                },
+                {
+                    label: 'Replacement Rate',
+                    data: <?php echo json_encode($beta_line_data['replacement']); ?>,
+                    borderColor: '#2E073F',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#2E073F',
+                    tension: 0.2
+                }
+            ]
+        },
+        options: lineChartOptionsBase
+    });
+
+    // PIE CHART CONFIG
     const pieCtx = document.getElementById('assetPieChart').getContext('2d');
     new Chart(pieCtx, {
         type: 'pie',
@@ -420,70 +544,6 @@ $beta_storage      = getAssetCountByArea($conn, 'Beta', 'in_stock');
                         }
                     }
                 }
-            }
-        }
-    });
-
-    // 2. ALPHA AREA BAR CHART
-    const alphaCtx = document.getElementById('alphaBarChart').getContext('2d');
-    new Chart(alphaCtx, {
-        type: 'bar',
-        data: {
-            labels: ['In Use', 'For Disposal', 'Replacement', 'In Storage'],
-            datasets: [{
-                label: 'Asset Count',
-                data: [
-                    <?php echo $alpha_in_use; ?>,
-                    <?php echo $alpha_disposal; ?>,
-                    <?php echo $alpha_replacement; ?>,
-                    <?php echo $alpha_storage; ?>
-                ],
-                backgroundColor: ['#AD49E1', '#62109F', '#2E073F', '#6c757d'],
-                borderRadius: 10,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: { beginAtZero: true, grid: { display: false } },
-                x: { grid: { display: false } }
-            }
-        }
-    });
-
-    // 3. BETA AREA BAR CHART
-    const betaCtx = document.getElementById('betaBarChart').getContext('2d');
-    new Chart(betaCtx, {
-        type: 'bar',
-        data: {
-            labels: ['In Use', 'For Disposal', 'Replacement', 'In Storage'],
-            datasets: [{
-                label: 'Asset Count',
-                data: [
-                    <?php echo $beta_in_use; ?>,
-                    <?php echo $beta_disposal; ?>,
-                    <?php echo $beta_replacement; ?>,
-                    <?php echo $beta_storage; ?>
-                ],
-                backgroundColor: ['#AD49E1', '#62109F', '#2E073F', '#6c757d'],
-                borderRadius: 10,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: { beginAtZero: true, grid: { display: false } },
-                x: { grid: { display: false } }
             }
         }
     });
