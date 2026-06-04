@@ -957,15 +957,35 @@ if (isset($_POST['save_asset'])) {
     });
 </script>
 
-<!-- LIVE QR SCANNER INITIALIZATION -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let html5QrCode = null;
     const qrScanBtn = document.getElementById('qrScanBtn');
-    const qrScannerModal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+    const qrScannerModalElement = document.getElementById('qrScannerModal');
+    
+    const qrScannerModal = qrScannerModalElement ? new bootstrap.Modal(qrScannerModalElement) : null;
     const searchInput = document.querySelector('input[name="search"]');
 
-    if(qrScanBtn) {
+    // BINAGONG FUNCTION PARA SA FORMAT MO MASTER
+    function extractAssetTag(scannedText) {
+        // Halimbawa ng scannedText: "TAG: GPA7789983 | DELL..."
+        
+        if (scannedText.toUpperCase().includes('TAG:')) {
+            // 1. Tanggalin muna ang "TAG:" o "TAG: "
+            let cleanStep1 = scannedText.replace(/TAG:\s*/i, ''); 
+            
+            // 2. Paghiwalayin gamit ang pipe symbol (|) kung may kasunod pang ibang text
+            let parts = cleanStep1.split('|');
+            
+            // 3. Kunin ang unang bahagi at tanggalin ang mga sobrang space (whitespace)
+            return parts[0].trim(); // Ito na yung "GPA7789983"
+        }
+
+        // Fallback kung sakaling malinis na agad o iba ang format na na-scan
+        return scannedText.trim();
+    }
+
+    if(qrScanBtn && qrScannerModal) {
         qrScanBtn.addEventListener('click', function() {
             qrScannerModal.show();
 
@@ -984,43 +1004,52 @@ document.addEventListener('DOMContentLoaded', function() {
                     { facingMode: "environment" }, 
                     config,
                     (decodedText, decodedResult) => {
-                        searchInput.value = decodedText;
+                        
+                        // Dito sinala gamit ang bagong logic
+                        const cleanTag = extractAssetTag(decodedText);
 
-                        const event = new Event('input', { bubbles: true });
-                        searchInput.dispatchEvent(event);
+                        // 1. IPASOK ANG TAG LANG SA SEARCH BAR
+                        if (searchInput) {
+                            searchInput.value = cleanTag;
 
-                        const form = searchInput.closest('form');
-                        if (form) {
-                            form.submit();
+                            // Trigger events para mag-update ang UI/Frameworks gaya ng Livewire/Vue
+                            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            searchInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
 
+                        // 2. PATAYIN ANG CAMERA AT ISARA ANG MODAL
                         if (html5QrCode && html5QrCode.isScanning) {
-                            html5QrCode.stop();
+                            html5QrCode.stop().then(() => {
+                                qrScannerModal.hide(); 
+                            }).catch(err => console.error("Error stopping scanner: ", err));
+                        } else {
+                            qrScannerModal.hide();
                         }
-                        qrScannerModal.hide();
 
+                        // Notification sa UI bago magsara
                         const resultsDiv = document.getElementById('qr-reader-results');
                         if(resultsDiv) {
-                            resultsDiv.innerHTML = '<div class="alert alert-success">✓ QR Code scanned: ' + decodedText + '</div>';
+                            resultsDiv.innerHTML = '<div class="alert alert-success">✓ Tag Extracted: ' + cleanTag + '</div>';
                         }
                     },
                     (errorMessage) => {
-                        // Silent log bypass para iwas console flood habang naghahanap ng frame
+                        // Silent log bypass para iwas flood
                     }
                 ).catch(err => {
                     console.error("Unable to start scanning.", err);
                 });
-            }, 500);
+            }, 400); 
         });
     }
 
-    // Patayin ang camera kapag sinara ng user ang Scanner Modal manually
-    document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function () {
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().then(() => {
-                console.log("Scanner stopped safely.");
-            }).catch(err => console.error("Error stopping scanner: ", err));
-        }
-    });
+    if (qrScannerModalElement) {
+        qrScannerModalElement.addEventListener('hidden.bs.modal', function () {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    console.log("Scanner stopped safely.");
+                }).catch(err => console.error("Error stopping scanner on hide: ", err));
+            }
+        });
+    }
 });
 </script>
