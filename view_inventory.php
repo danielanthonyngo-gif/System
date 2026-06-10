@@ -147,6 +147,7 @@ if (isset($_POST['save_asset'])) {
     $count_replacement = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Replacement'"))['total'] ?? 0;
     $count_disposal    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='For Disposal'"))['total'] ?? 0;
     $count_active      = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='Active'"))['total'] ?? 0;
+    $count_storage = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM assets WHERE status='In Storage'"))['total'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -297,11 +298,12 @@ if (isset($_POST['save_asset'])) {
         }
         .filter-dropdown .dropdown-divider { margin: 8px 0; border-top: 1px solid #f1f1f1; }
 
-        /* Table & Badges */
+       /* Table & Badges */
         .status-badge { padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; }
         .st-active { background: #E9D5FF; color: #7A1CAC; }
         .st-disposal { background: #FEE2E2; color: #DC2626; }
         .st-replacement { background: #FEF3C7; color: #D97706; }
+        .st-storage { background: #ECEFF1; color: #37474F; } /* Ito ang bagong dagdag para sa In Storage */
 
         /* Form Inputs */
         .input-custom { border-radius: 12px; padding: 12px 15px; border: 1.5px solid #eee; background: #fafafa; font-weight: 600; font-size: 0.9rem; width: 100%; transition: 0.3s; }
@@ -319,7 +321,7 @@ if (isset($_POST['save_asset'])) {
             transition: transform 0.2s;
         }
 
-        /* Active Style (Purple/Violet) */
+       /* Active Style (Purple/Violet) */
         .card-active { background: #F3E5F5; color: #7A1CAC; }
         .card-active .metric-val { color: #7A1CAC; }
 
@@ -330,45 +332,64 @@ if (isset($_POST['save_asset'])) {
         /* Disposal Style (Red/Light-Red) */
         .card-disposal { background: #FFEBEE; color: #C62828; }
         .card-disposal .metric-val { color: #C62828; }
+
+        /* In Storage Style (Slate/Gray) */
+        .card-storage { background: #ECEFF1; color: #37474F; }
+        .card-storage .metric-val { color: #37474F; }
+
     </style>
 </head>
 <body>
 
-<?php include 'aside.php';
-    $title     = "INVENTORY MANAGEMENT";
-    $sub_title = "Asset Tracking System"; ?>
+<?php 
+include 'aside.php';
+$title     = "INVENTORY MANAGEMENT";
+$sub_title = "Asset Tracking System"; 
+?>
 
 <div class="content-wrapper">
      <?php include 'header.php'; ?>
 
-    <!-- METRIC CARDS -->
     <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="metric-card card-active">
-                <span class="fw-bold small">ACTIVE</span>
-                <span class="metric-val fw-bolder"><?php echo $count_active; ?></span>
-            </div>
+        <div class="col-6 col-md-3">
+            <a href="view_inventory.php?status=Active" class="text-decoration-none d-block">
+                <div class="metric-card card-active">
+                    <span class="fw-bold small">ACTIVE</span>
+                    <span class="metric-val fw-bolder"><?php echo $count_active; ?></span>
+                </div>
+            </a>
         </div>
         
-        <div class="col-md-4">
-            <div class="metric-card card-replacement">
-                <span class="fw-bold small">REPLACEMENT</span>
-                <span class="metric-val fw-bolder"><?php echo $count_replacement; ?></span>
-            </div>
+        <div class="col-6 col-md-3">
+            <a href="view_inventory.php?status=Replacement" class="text-decoration-none d-block">
+                <div class="metric-card card-replacement">
+                    <span class="fw-bold small">REPLACEMENT</span>
+                    <span class="metric-val fw-bolder"><?php echo $count_replacement; ?></span>
+                </div>
+            </a>
         </div>
         
-        <div class="col-md-4">
-            <div class="metric-card card-disposal">
-                <span class="fw-bold small">FOR DISPOSAL</span>
-                <span class="metric-val fw-bolder"><?php echo $count_disposal; ?></span>
-            </div>
+        <div class="col-6 col-md-3">
+            <a href="view_inventory.php?status=For Disposal" class="text-decoration-none d-block">
+                <div class="metric-card card-disposal">
+                    <span class="fw-bold small">FOR DISPOSAL</span>
+                    <span class="metric-val fw-bolder"><?php echo $count_disposal; ?></span>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <a href="view_inventory.php?status=In Storage" class="text-decoration-none d-block">
+                <div class="metric-card card-storage">
+                    <span class="fw-bold small">IN STORAGE</span>
+                    <span class="metric-val fw-bolder"><?php echo $count_storage ?? 0; ?></span>
+                </div>
+            </a>
         </div>
     </div>
 
-    <!-- ACTION ROW (SEARCH, FILTER, CONTROLS) -->
     <div class="data-panel mb-4">
         <div class="row g-3 align-items-center">
-            <!-- Left Side: Search & Filters -->
             <div class="col-md-7">
                 <form method="GET" id="filterForm" class="d-flex gap-3 m-0">
                     <div class="position-relative flex-grow-1">
@@ -412,8 +433,9 @@ if (isset($_POST['save_asset'])) {
                             <li><h6 class="dropdown-header">By Status</h6></li>
                             <li><a class="dropdown-item <?php echo $filter_status == 'Active' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Active')">Active</a></li>
                             <li><a class="dropdown-item <?php echo $filter_status == 'Replacement' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'Replacement')">Replacement</a></li>
-                            <li><a class="dropdown-item <?php echo $filter_status == 'For Disposal' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'For Disposal')">Disposal</a></li>
-                            
+                            <li><a class="dropdown-item <?php echo $filter_status == 'For Disposal' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'For Disposal')">For Disposal</a></li>
+                            <li><a class="dropdown-item <?php echo $filter_status == 'In Storage' ? 'active' : ''; ?>" href="#" onclick="applyFilter('status', 'In Storage')">In Storage</a></li>
+
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="#" onclick="applyFilter('clear', '')">Clear All Filters</a></li>
                         </ul>
@@ -421,7 +443,6 @@ if (isset($_POST['save_asset'])) {
                 </form>
             </div>
 
-            <!-- Right Side: CRUD & Export Controls -->
             <div class="col-md-5 text-end">
                 <button class="btn p-3 px-4 rounded-4 fw-bold me-2"
                         style="background-color: #6f42c1; color: #ffffff !important; border: none;"
@@ -446,7 +467,6 @@ if (isset($_POST['save_asset'])) {
         </div>
     </div>
 
-    <!-- INVENTORY TABLE PANEL -->
     <div class="data-panel">
         <div id="table-to-export">
             <div class="table-responsive">
@@ -466,7 +486,6 @@ if (isset($_POST['save_asset'])) {
                     </thead>
                     <tbody>
                         <?php
-                            // PAGINATION INITIALIZATION
                             $limit = 10; 
                             $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
                             $offset = ($page - 1) * $limit;
@@ -487,19 +506,22 @@ if (isset($_POST['save_asset'])) {
 
                             $where_sql = count($where_clauses) > 0 ? "WHERE " . implode(" AND ", $where_clauses) : "";
 
-                            // Count total items
                             $total_query = "SELECT COUNT(*) as total FROM `assets` as a LEFT JOIN client_accounts as b ON a.location=b.account_id $where_sql";
                             $total_res = mysqli_query($conn, $total_query);
                             $total_records = mysqli_fetch_assoc($total_res)['total'];
                             $total_pages = ceil($total_records / $limit);
 
-                            // Get chunk of data
                             $sql = "SELECT * FROM `assets` as a LEFT JOIN client_accounts as b ON a.location=b.account_id $where_sql ORDER BY a.inventory_date DESC LIMIT $limit OFFSET $offset";
                             $res = mysqli_query($conn, $sql);
 
                             if (mysqli_num_rows($res) > 0):
                                 while ($row = mysqli_fetch_assoc($res)):
-                                    $badge = ($row['status'] == 'For Disposal') ? 'st-disposal' : (($row['status'] == 'Replacement') ? 'st-replacement' : 'st-active');
+                                   $status_clean = $row['status'];
+                                   $badge = 'st-active'; 
+
+                                   if ($status_clean == 'For Disposal') { $badge = 'st-disposal'; } 
+                                   elseif ($status_clean == 'Replacement') { $badge = 'st-replacement'; } 
+                                   elseif ($status_clean == 'In Storage') { $badge = 'st-storage'; }
                         ?>
                         <tr>
                             <td class="small fw-600"><?php echo date('M d, Y', strtotime($row['inventory_date'])); ?></td>
@@ -514,7 +536,7 @@ if (isset($_POST['save_asset'])) {
                                     data-year="<?php echo $row['year_model']; ?>"
                                     data-loc="<?php echo htmlspecialchars($row['client_name']); ?>"
                                     data-status="<?php echo $row['status']; ?>"
-                                    data-qr="TAG: <?php echo $row['asset_tag']; ?> | TYPE: <?php echo $row['asset_type']; ?> | MODEL: <?php echo $row['brand_model']; ?> (<?php echo $row['year_model']; ?>) | SN: <?php echo $row['serial_number']; ?> | LOC: <?php echo htmlspecialchars($row['client_name']); ?> | STATUS: <?php echo $row['status']; ?> | DATE: <?php echo $row['inventory_date']; ?>">
+                                    data-qr="TAG: <?php echo $row['asset_tag']; ?> | TYPE: <?php echo $row['asset_type']; ?> | MODEL: <?php echo $row['brand_model']; ?> | SN: <?php echo $row['serial_number']; ?> | LOC: <?php echo htmlspecialchars($row['client_name']); ?> | STATUS: <?php echo $row['status']; ?>">
                                     <i class="fas fa-qrcode"></i>
                                 </button>
                             </td>
@@ -555,7 +577,6 @@ if (isset($_POST['save_asset'])) {
             </div>
         </div>
 
-        <!-- PAGINATION INTERFACE -->
         <?php if ($total_pages > 1): ?>
         <div class="d-flex justify-content-between align-items-center mt-3 px-3 no-export">
             <div class="small text-muted">
@@ -589,75 +610,61 @@ if (isset($_POST['save_asset'])) {
     </div>
 </div>
 
-<!-- =========================================================
-     MODALS SECTION
-     ========================================================= -->
-
-<!-- CREATE MODAL -->
 <div class="modal fade" id="createItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
             <form action="" method="POST" class="p-4">
-                <div class="row">
-                    <div class="col-md-12 pe-4">
-                        <h3 class="fw-800 mb-4" style="color:var(--inspiro-purple)">Register New Asset</h3>
-                        <div class="row g-3">
-                            <div class="col-md-12">
-                                <label class="form-label-custom">Asset Tag</label>
-                                <input type="text" name="manual_tag" id="in_tag" class="input-custom" placeholder="Optional custom tag">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Serial Number</label>
-                                <input type="text" name="serial_number" id="in_serial" class="input-custom" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Brand & Model</label>
-                                <input type="text" name="brand_model" id="in_model" class="input-custom" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label-custom">Asset Type</label>
-                                <select name="type" class="input-custom">
-                                    <option>Laptop</option>
-                                    <option>Desktop</option>
-                                    <option>Monitor</option>
-                                    <option>Printer</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label-custom">Location</label>
-                                <select name="location" class="input-custom" required>
-                                    <option value="" disabled selected>Select Client Account</option>
-                                    <?php foreach ($client_accounts as $account): ?>
-                                        <option value="<?php echo $account['account_id']; ?>">
-                                            <?php echo htmlspecialchars($account['client_name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label-custom">Status</label>
-                                <select name="status" class="input-custom">
-                                    <option>Active</option>
-                                    <option>Replacement</option>
-                                    <option>For Disposal</option>
-                                </select>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label-custom">Date Received</label>
-                                <input type="date" name="date" class="input-custom" value="<?php echo date('Y-m-d'); ?>">
-                            </div>
-                        </div>
+                <h3 class="fw-800 mb-4" style="color:var(--inspiro-purple)">Register New Asset</h3>
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label-custom">Asset Tag</label>
+                        <input type="text" name="manual_tag" id="in_tag" class="input-custom" placeholder="Optional custom tag">
                     </div>
-                            <div class="text-end mt-4">
-                                <button type="button" class="btn btn-light px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
-                                <button type="submit" id="saveAssetBtn" data-role='<?php echo $_SESSION['role'] ?>' name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
-                            </div>
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Serial Number</label>
+                        <input type="text" name="serial_number" id="in_serial" class="input-custom" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Brand & Model</label>
+                        <input type="text" name="brand_model" id="in_model" class="input-custom" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Asset Type</label>
+                        <select name="type" class="input-custom">
+                            <option>Laptop</option>
+                            <option>Desktop</option>
+                            <option>Monitor</option>
+                            <option>Printer</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Location</label>
+                        <select name="location" class="input-custom" required>
+                            <option value="" disabled selected>Select Client Account</option>
+                            <?php foreach ($client_accounts as $account): ?>
+                                <option value="<?php echo $account['account_id']; ?>">
+                                    <?php echo htmlspecialchars($account['client_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Status</label>
+                        <select name="status" class="input-custom">
+                            <option value="Active">Active</option>
+                            <option value="Replacement">Replacement</option>
+                            <option value="For Disposal">For Disposal</option>
+                            <option value="In Storage">In Storage</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label-custom">Date Received</label>
+                        <input type="date" name="date" class="input-custom" value="<?php echo date('Y-m-d'); ?>">
                     </div>
                 </div>
                 <div class="text-end mt-4">
                     <button type="button" class="btn btn-light px-4 py-2 fw-bold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" id="saveAssetBtn" data-role='<?php echo $_SESSION['role'] ?>' name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
+                    <button type="submit" id="saveAssetBtn" data-role="<?php echo $_SESSION['role'] ?? ''; ?>" name="save_asset" class="btn px-5 py-2 fw-bold ms-2" style="background: #6f42c1; color: white;">Save Asset</button>
                 </div>
             </form>
         </div>
@@ -701,6 +708,7 @@ if (isset($_POST['save_asset'])) {
                             <option>Active</option>
                             <option>Replacement</option>
                             <option>For Disposal</option>
+                            <option>In Storage</option>
                         </select>
                     </div>
                 </div>

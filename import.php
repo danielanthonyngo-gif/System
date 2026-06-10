@@ -24,7 +24,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inspiro | Computer Asset Tracking</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -32,23 +32,90 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        :root {
+        :root { 
             --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
-            --accent-purple: #7A1CAC;
-            --bg-light: #f4f7fe;
+            --accent-purple: #8e44ad;
+            --bg-light: #f4f7fe; 
             --sidebar-width: 260px;
         }
-        body {
-            background-color: var(--bg-light);
+
+        body { 
+            background-color: var(--bg-light); 
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: #362d36;
             margin: 0;
         }
+
         .content-wrapper {
             margin-left: var(--sidebar-width);
             padding: 35px;
             min-height: 100vh;
         }
+
+        .glass-header-container {
+            background: white;
+            border-radius: 35px;
+            padding: 25px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+            margin-bottom: 40px;
+            width: 100%;
+        }
+
+        .header-title-section h2 {
+            color: var(--accent-purple);
+            font-weight: 700;
+            font-size: 1.6rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-title-section p {
+            color: #a3aed0;
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .user-nav-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info-text { text-align: right; }
+
+        .user-name-top {
+            color: #2E073F;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        .sign-out-link {
+            color: #AD49E1;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .profile-avatar-pill {
+            width: 55px; height: 55px;
+            background: var(--main-gradient);
+            color: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.4rem;
+            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25);
+        }
+
         .data-panel { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
         .input-custom { border-radius: 12px; padding: 12px 15px; border: 1.5px solid #eee; background: #fafafa; font-weight: 600; font-size: 0.9rem; width: 100%; transition: 0.3s; }
         .btn-purple { background: var(--main-gradient); color: white; border-radius: 12px; padding: 12px 20px; font-weight: 700; border: none; transition: 0.2s; }
@@ -62,6 +129,11 @@
         
         .badge-dup { background-color: #ef4444; color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
         .badge-ok { background-color: #10b981; color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+
+        @media (max-width: 992px) {
+            .content-wrapper { margin-left: 0; padding: 20px; }
+            .glass-header-container { padding: 20px; border-radius: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -166,7 +238,6 @@ $(document).ready(function() {
 
             const tagsToCheck = excelRowsData.map(r => String(r['ASSET_TAG'] || r['Asset Tag'] || '').trim()).filter(Boolean);
 
-            // Fetch duplicates using application/json to prevent post parameter overhead limits
             $.ajax({
                 url: 'check_duplicates.php',
                 type: 'POST',
@@ -269,7 +340,6 @@ $(document).ready(function() {
 
         Swal.fire({ title: 'Writing entries...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-        // Stream JSON directly to completely bypass max_input_vars limit warnings
         $.ajax({
             url: 'process_import.php',
             type: 'POST',

@@ -1,58 +1,85 @@
 <?php
+// 1. Siguraduhing may laman ang $display_name, kung wala ay gamitin ang Session o 'Guest'
+$raw_name = trim($display_name ?? $_SESSION['username'] ?? 'Guest');
 
- $display_name = explode(' ', trim($display_name))[0];
+// 2. Kunin ang Unang Pangalan (First Name) para sa display
+$first_name = explode(' ', $raw_name)[0];
+
+// 3. Kunin ang Unang Letra (Initial) para sa Avatar
+$avatar_initial = strtoupper(substr($first_name, 0, 1));
 ?>
 
 <div class="glass-header-container">
-        <div class="header-title-section">
-            <h2><?php echo $title; ?></h2>
-            <p><?php echo $sub_title; ?></p>
-            
-        </div>
-
-        <div class="user-nav-section">
-            <div class="user-dropdown-trigger" id="userDropdownTrigger">
-                <div class="user-info-text">
-                    <div class="user-name-top"><?php echo htmlspecialchars($display_name); ?></div>
-                    <div class="dropdown-arrow">▼</div>
-                </div>
-                <div class="profile-avatar-pill">
-                    <?php echo strtoupper(substr($display_name, 0, 1)); ?>
-                </div>
-            </div>
-            <div class="dropdown-menu" id="userDropdownMenu">
-                <div class="dropdown-item username-item">
-                    <div class="dropdown-avatar">
-                        <?php echo strtoupper(substr($display_name, 0, 1)); ?>
-                    </div>
-                    <div class="dropdown-user-details">
-                       <div class="dropdown-name"><?php echo htmlspecialchars(explode(' ', trim($display_name))[0]); ?></div>
-                        <div class="dropdown-email">
-                             <?php 
-                         // I-display ang naka-save na username sa session
-                            echo htmlspecialchars($_SESSION['username'] ?? 'Guest'); 
-                            ?>
-</div>
-                    </div>
-                </div>
-                <div class="dropdown-divider"></div>
-                <a href="logout.php" class="dropdown-item logout-item">
-                    <svg class="logout-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <polyline points="16 17 21 12 16 7" />
-                        <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                    Sign Out
-                </a>
-            </div>
-        </div>
+    <div class="header-title-section">
+        <h2><?php echo htmlspecialchars($title ?? ''); ?></h2>
+        <p><?php echo htmlspecialchars($sub_title ?? ''); ?></p>
     </div>
 
-    <style>
+    <div class="user-nav-section">
+        <div class="user-dropdown-trigger" id="userDropdownTrigger">
+            <div class="user-info-text">
+                <div class="user-name-top"><?php echo htmlspecialchars($first_name); ?></div>
+                <div class="dropdown-arrow">▼</div>
+            </div>
+            <div class="profile-avatar-pill">
+                <?php echo $avatar_initial; ?>
+            </div>
+        </div>
+        
+        <div class="dropdown-menu" id="userDropdownMenu">
+            <div class="dropdown-item username-item">
+                <div class="dropdown-avatar">
+                    <?php echo $avatar_initial; ?>
+                </div>
+                <div class="dropdown-user-details">
+                    <div class="dropdown-name"><?php echo htmlspecialchars($first_name); ?></div>
+                    <div class="dropdown-email">
+                        <?php echo htmlspecialchars($_SESSION['username'] ?? 'Guest'); ?>
+                    </div>
+                </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="logout.php" class="dropdown-item logout-item">
+                <svg class="logout-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign Out
+            </a>
+        </div>
+    </div>
+</div>
 
+<style>
+/* Responsive Header Base Setup */
+.glass-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.header-title-section {
+    flex: 1;
+    min-width: 0; 
+}
+
+.header-title-section h2 {
+    margin: 0;
+    word-wrap: break-word;
+}
+
+.header-title-section p {
+    margin: 4px 0 0 0;
+    word-wrap: break-word;
+}
 
 .user-nav-section {
     position: relative;
+    flex-shrink: 0;
 }
 
 .user-dropdown-trigger {
@@ -65,6 +92,7 @@
     border-radius: 80px;
     transition: all 0.25s ease;
     border: 1px solid rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
 }
 
 .user-dropdown-trigger:hover {
@@ -210,7 +238,6 @@
     margin-right: 2px;
 }
 
-
 .dropdown-overlay {
     position: fixed;
     top: 0;
@@ -224,10 +251,61 @@
 .dropdown-overlay.active {
     display: block;
 }
+
+/* --- Responsive Media Queries --- */
+@media (max-width: 600px) {
+    .glass-header-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 14px;
+        width: 100%;
+    }
+
+    .header-title-section {
+        width: 100%;
+    }
+
+    .header-title-section h2 {
+        font-size: 1.35rem; 
+    }
+    
+    .header-title-section p {
+        font-size: 0.9rem;
+    }
+
+    .user-nav-section {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .user-dropdown-trigger {
+        display: inline-flex !important;
+        background: rgba(255, 255, 255, 0.75) !important;
+        border: 1px solid rgba(255, 255, 255, 0.9) !important;
+        padding: 6px 14px 6px 18px !important; 
+        border-radius: 80px !important; 
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .user-info-text {
+        display: flex !important; 
+    }
+    
+    .dropdown-menu {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%) translateY(-12px);
+    }
+    
+    .dropdown-menu.show {
+        transform: translateX(-50%) translateY(0);
+    }
+}
 </style>
 
 <script>
-
 (function() {
     const trigger = document.getElementById('userDropdownTrigger');
     const dropdown = document.getElementById('userDropdownMenu');
@@ -263,7 +341,6 @@
     }
     
     trigger.addEventListener('click', toggleDropdown);
-    
     overlay.addEventListener('click', closeDropdown);
     
     document.addEventListener('keydown', function(e) {
@@ -271,12 +348,5 @@
             closeDropdown();
         }
     });
-    
-    const logoutLink = dropdown.querySelector('.logout-item');
-    if (logoutLink) {
-        logoutLink.addEventListener('click', function() {
-    
-        });
-    }
 })();
 </script>

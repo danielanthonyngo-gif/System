@@ -11,6 +11,41 @@ if (!isset($_SESSION['user_id'])) {
 $location = isset($_GET['location']) ? mysqli_real_escape_string($conn, $_GET['location']) : 'BDO';
 
 /**
+ * SALUHIN ANG PULLOUT REQUEST (AJAX POST REQUEST)
+ */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'pullout_asset') {
+    $asset_tag = mysqli_real_escape_string($conn, $_POST['asset_tag']);
+    
+    if (!empty($asset_tag)) {
+        // Kunin muna ang lumang data para sa audit log bago i-update
+        $old_asset_q = mysqli_query($conn, "SELECT * FROM assets WHERE asset_tag = '$asset_tag' LIMIT 1");
+        $old_asset = mysqli_fetch_assoc($old_asset_q);
+
+        $pullout_query = "UPDATE assets SET status = 'In Storage', location = NULL WHERE asset_tag = '$asset_tag'";
+        
+        if (mysqli_query($conn, $pullout_query)) {
+            // Isama sa Audit Log ang PULLOUT Action kung may id ang asset
+            if ($old_asset) {
+                logAudit($conn, 'PULLOUT_ASSET', 'asset', $old_asset['id'], null, [
+                    'asset_tag'   => $asset_tag,
+                    'old_status'  => $old_asset['status'],
+                    'new_status'  => 'In Storage',
+                    'old_location'=> $old_asset['location'],
+                    'new_location'=> null
+                ]);
+            }
+
+            echo json_encode(['status' => 'success', 'message' => 'Asset successfully pulled out and moved to storage!']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . mysqli_error($conn)]);
+        }
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid asset tag identification.']);
+    }
+    exit();
+}
+
+/**
  * SALUHIN ANG CONFIRM DEPLOYMENT / TRANSFER (AJAX POST REQUEST)
  */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deploy_asset') {
@@ -20,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     // Saluhin ang sinalang Serial Number mula sa Ajax post request kung mayroon, kundi default sa asset tag
     $serial_number = isset($_POST['serial_number']) ? mysqli_real_escape_string($conn, $_POST['serial_number']) : $asset_tag;
     
-    // Kunin ang account_id para sa kasalukuyang lokasyon
+    // Kunin ang account_id para sa kasalukuyang lokasyon (New Location ID)
     $loc_query = mysqli_query($conn, "SELECT account_id FROM client_accounts WHERE client_name = '$location' LIMIT 1");
     $loc_row = mysqli_fetch_assoc($loc_query);
     $location_id = $loc_row['account_id'] ?? 0;
@@ -28,26 +63,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (!empty($asset_tag) && !empty($equipment_name) && $location_id > 0) {
         
         // -------------------------------------------------------------
-        // REVISED VALIDATION AT AUTOMATIC TRANSFER LOGIC
+        // REVISED VALIDATION AT AUTOMATIC TRANSFER LOGIC WITH AUDIT LOG
         // -------------------------------------------------------------
-        $check_duplicate = mysqli_query($conn, "SELECT location, asset_tag, serial_number FROM assets WHERE asset_tag = '$asset_tag' OR serial_number = '$serial_number' LIMIT 1");
+        $check_duplicate = mysqli_query($conn, "SELECT * FROM assets WHERE asset_tag = '$asset_tag' OR serial_number = '$serial_number' LIMIT 1");
         
         if (mysqli_num_rows($check_duplicate) > 0) {
-            $existing_asset = mysqli_fetch_assoc($check_duplicate);
+            // ETO ANG MAGIGING $old_data MO (Laman nito ang dating location ID, lumang brand_model, atbp.)
+            $old_data = mysqli_fetch_assoc($check_duplicate);
             
             // KUNG NANDITO NA SA KASALUKUYANG AREA: I-block para maiwasan ang double deployment
-            if ($existing_asset['location'] == $location_id) {
+            if ($old_data['location'] == $location_id && $old_data['status'] == 'Active') {
                 echo json_encode(['status' => 'error', 'message' => ' This Asset is already deployed in this location!']);
                 exit();
             } else {
-                // KUNG NASA IBANG AREA: I-update ang location at pangalan papunta sa kasalukuyang area (Auto-Transfer)
-                $update_query = "UPDATE assets 
-                                 SET location = '$location_id', 
-                                     brand_model = '$equipment_name', 
-                                     status = 'Active' 
-                                 WHERE asset_tag = '$asset_tag' OR serial_number = '$serial_number'";
+                
+                // --- KUNIN ANG CLIENT NAME NG DATING LOKASYON MULA SA DATABASE ---
+                $old_loc_id = $old_data['location'];
+                $old_loc_query = mysqli_query($conn, "SELECT client_name FROM client_accounts WHERE account_id = '$old_loc_id' LIMIT 1");
+                $old_loc_row = mysqli_fetch_assoc($old_loc_query);
+                $old_location_name = $old_loc_row['client_name'] ?? 'Unknown Location';
+
+                // Babaguhin natin pansamantala ang value ng 'location' sa $old_data para maging text (client_name) 
+                // para mag-match sa ipapasa nating bagong $location string sa dulo.
+                $old_data['location'] = $old_location_name;
+
+                // UPDATE / TRANSFER LOGIC
+                $update_query = "UPDATE assets SET location = '$location_id', brand_model = '$equipment_name', status = 'Active' WHERE asset_tag = '$asset_tag' OR serial_number = '$serial_number'";
                 
                 if (mysqli_query($conn, $update_query)) {
+
+                    // GAYA NG HALIMBAWA MO: Ipasa ang $old_data sa 4th argument, at ang mga bagong string data sa 5th argument
+                    logAudit($conn, 'TRANSFER_ASSET', 'asset', $old_data['id'], $old_data, [
+                        'asset_tag'     => $asset_tag,
+                        'serial_number' => $serial_number,
+                        'brand_model'   => $equipment_name,
+                        'location'      => $location, // Ang $location ay naglalaman ng bagong client_name (e.g. BDO CORE)
+                        'status'        => 'Active',
+                    ]);
+
                     echo json_encode(['status' => 'success', 'message' => 'This asset has been successfully transferred to this location!']);
                 } else {
                     echo json_encode(['status' => 'error', 'message' => 'Transfer Error: ' . mysqli_error($conn)]);
@@ -55,13 +108,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 exit();
             }
         }
-        // -------------------------------------------------------------
 
-        // KUNG WALA PA SA DATABASE: Mag-insert ng bagong asset record
+        // INSERT LOGIC (BAGONG DEPLOY NA ASSET)
+        $date = date('Y-m-d H:i:s');
         $insert_query = "INSERT INTO assets (asset_tag, brand_model, location, status, asset_type, serial_number) 
                          VALUES ('$asset_tag', '$equipment_name', '$location_id', 'Active', 'Laptop', '$serial_number')";
         
         if (mysqli_query($conn, $insert_query)) {
+            $new_asset_id = mysqli_insert_id($conn);
+
+            // Dahil bagong gawa (INSERT), walang lumang data, kaya `null` o empty array ang ipapasa sa 4th argument
+            logAudit($conn, 'ADD_ASSET', 'asset', $new_asset_id, null, [
+                'asset_tag'      => $asset_tag,
+                'serial_number'  => $serial_number,
+                'brand_model'    => $equipment_name,
+                'location'       => $location, 
+                'status'         => 'Active',
+            ]);
+
             echo json_encode(['status' => 'success', 'message' => 'Asset deployed successfully!']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . mysqli_error($conn)]);
@@ -72,11 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit(); 
 }
 
-/**
- * FIXED QUERIES
- */
-
-// 1. Stats Query - Bilangin ang active assets para sa lokasyon gamit ang JOIN
 $active_query = mysqli_query($conn, "
     SELECT COUNT(a.id) as t 
     FROM assets a 
@@ -85,12 +144,12 @@ $active_query = mysqli_query($conn, "
 ");
 $active = mysqli_fetch_assoc($active_query)['t'] ?? 0;
 
-// 2. Listahan ng Assets - Kunin ang assets na tumutugma sa client name gamit ang JOIN
+// 2. Listahan ng Assets - Kunin ang assets na tumutugma sa client name at kasalukuyang 'Active' status gamit ang JOIN
 $assets = mysqli_query($conn, "
     SELECT a.*, acc.client_name 
     FROM assets a 
     JOIN client_accounts acc ON a.location = acc.account_id 
-    WHERE acc.client_name = '$location'");
+    WHERE acc.client_name = '$location' AND a.status = 'Active'");
 
 $current_page = 'view_area.php'; 
 $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
@@ -333,7 +392,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
                                 <td><span class="fw-700 text-muted"><?php echo htmlspecialchars($row['asset_type'] ?? 'N/A'); ?></span></td>
                                 <td><span class="badge-location"><?php echo htmlspecialchars($row['client_name']); ?></span></td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-800" style="font-size: 0.7rem;">PULLOUT</button>
+                                    <button class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-800 btn-pullout" data-tag="<?php echo htmlspecialchars($row['asset_tag']); ?>" style="font-size: 0.7rem;">PULLOUT</button>
                                 </td>
                             </tr>
                             <?php endwhile; ?>
@@ -393,6 +452,7 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -495,6 +555,56 @@ $is_embed = (isset($_GET['layout']) && $_GET['layout'] == 'embed');
             currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
             if (isScanning) { await stopScanner(); toggleCamera(); }
         }
+
+        $(document).on('click', '.btn-pullout', function() {
+            let assetTag = $(this).data('tag');
+
+            Swal.fire({
+                title: 'Are you sure',
+                text: `Do you want to pull out asset tag: ${assetTag} to storage?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#7A1CAC',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, pull out',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Inililipat sa Storage...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                    let pulloutData = new FormData();
+                    pulloutData.append('action', 'pullout_asset');
+                    pulloutData.append('asset_tag', assetTag);
+
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: pulloutData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        Swal.close();
+                        if (data.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: data.message,
+                                confirmButtonColor: '#7A1CAC',
+                                timer: 2000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                location.reload(); 
+                            });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#2E073F' });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({ icon: 'error', title: 'System Error', text: 'May problema sa engine script.', confirmButtonColor: '#2E073F' });
+                    });
+                }
+            });
+        });
 
         // AJAX POST PROCESS (HANDLES DEPLOYMENT AND AUTO-TRANSFER)
         document.getElementById('btnConfirmDeployment').addEventListener('click', function () {
