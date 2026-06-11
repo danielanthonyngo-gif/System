@@ -401,7 +401,7 @@ $beta_line_data  = getBuildingClientDetailedData($conn, 2);
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
                     <h5 class="fw-bold mb-2" style="color: #2E073F;">Alpha Building Client Analysis</h5>
-                    <small class="text-muted d-block mb-4">Percentage (%) breakdown ng mga status kada client account</small>
+                    <small class="text-muted d-block mb-4">Percentage (%) breakdown of every Departments</small>
                     <div style="height: 320px;">
                         <canvas id="alphaLineChart"></canvas>
                     </div>
@@ -410,7 +410,7 @@ $beta_line_data  = getBuildingClientDetailedData($conn, 2);
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
                     <h5 class="fw-bold mb-2" style="color: #2E073F;">Beta Building Client Analysis</h5>
-                    <small class="text-muted d-block mb-4">Percentage (%) breakdown ng mga status kada client account</small>
+                    <small class="text-muted d-block mb-4">Percentage (%) breakdown of every Departments</small>
                     <div style="height: 320px;">
                         <canvas id="betaLineChart"></canvas>
                     </div>
