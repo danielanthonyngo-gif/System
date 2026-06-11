@@ -32,11 +32,23 @@ if (!empty($location_id)) {
 
 $where_sql = "WHERE " . implode(" AND ", $where_clauses);
 
-// 2. DINAMIKONG BILANG NG MGA ASSETS
+// 2. DINAMIKONG BILANG NG MGA ASSETS (TOTAL BASE SA STATUS)
 $count_query = mysqli_query($conn, "SELECT COUNT(a.id) as total FROM assets a $where_sql");
 $asset_count = mysqli_fetch_assoc($count_query)['total'] ?? 0;
 
-// 3. KUNIN ANG DETALYE NG MGA ASSETS
+// --- DITO NATIN DIREKTANG TINARGET ANG ASSET_TYPE COLUMN SA DATABASE ---
+// Gumamit ako ng LIKE '%...%' para kahit may spaces o iba ang capitalization (Desktop, desktop, DESKTOP) ay mabibilang pa rin.
+$desktop_query = mysqli_query($conn, "SELECT COUNT(a.id) as total FROM assets a $where_sql AND a.asset_type LIKE '%desktop%'");
+$desktop_count = ($desktop_query) ? (mysqli_fetch_assoc($desktop_query)['total'] ?? 0) : 0;
+
+$laptop_query = mysqli_query($conn, "SELECT COUNT(a.id) as total FROM assets a $where_sql AND a.asset_type LIKE '%laptop%'");
+$laptop_count = ($laptop_query) ? (mysqli_fetch_assoc($laptop_query)['total'] ?? 0) : 0;
+
+$monitor_query = mysqli_query($conn, "SELECT COUNT(a.id) as total FROM assets a $where_sql AND a.asset_type LIKE '%monitor%'");
+$monitor_count = ($monitor_query) ? (mysqli_fetch_assoc($monitor_query)['total'] ?? 0) : 0;
+
+
+// 3. KUNIN ANG DETALYE NG MGA ASSETS PARA SA TABLE
 $assets = mysqli_query($conn, "
     SELECT a.*, COALESCE(acc.client_name, a.location) as display_client_name 
     FROM assets a 
@@ -60,11 +72,10 @@ switch ($current_status) {
         $dynamic_title = "IN STORAGE";
         break;
     default:
-        $dynamic_title = strtoupper($current_status); // Fallback kung may iba pang status
+        $dynamic_title = strtoupper($current_status);
         break;
 }
 
-// SET VARIABLES PARA SA HEADER.PHP (Binago ang $title para sumunod sa pinindot mong container)
 $title        = $dynamic_title;
 $sub_title    = "Asset Management System (" . htmlspecialchars($client_name) . ")";
 $display_name = $_SESSION['user_full_name'] ?? 'Daniel'; 
@@ -100,7 +111,6 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
             overflow-x: hidden;
         }
         
-        /* CONTENT WRAPPER & RESPONSIVE LAYOUT */
         .content-wrapper { 
             margin-left: var(--sidebar-width); 
             padding: 35px; 
@@ -108,7 +118,6 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
             transition: all 0.3s ease;
         }
 
-        /* GINAYANG GLASS HEADER STYLES MULA SA INDEX.PHP */
         .glass-header-container {
             background: white;
             border-radius: 35px;
@@ -173,7 +182,7 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
             box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25);
         }
 
-        /* STAT CARD STYLES */
+        /* PARE-PAREHONG STAT CARD STYLES (EXACTLY THE SAME) */
         .single-stat-card {
             background: white;
             border-radius: 20px;
@@ -184,17 +193,36 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.01);
             border: 1px solid #edf2f7;
             width: 100%;
-            max-width: 280px;
         }
+        
         .icon-square {
-            width: 48px; height: 48px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 1.25rem;
+            width: 48px; 
+            height: 48px; 
+            border-radius: 12px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            color: white; 
+            font-size: 1.25rem;
+            background: #AD49E1; 
         }
-        .bg-active { background: #AD49E1; }
-        .bg-disposal { background: #62109F; }
-        .bg-replacement { background: #2E073F; }
-        .bg-storage { background: #6c757d; }
+        
+        .stat-label {
+            color: #a3aed0;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem; 
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+        
+        .stat-number {
+            margin: 0; 
+            font-weight: 700; 
+            color: #1e293b; 
+            letter-spacing: -1px;
+            font-size: 1.8rem;
+        }
 
         /* TABLE CARD STYLES */
         .table-card {
@@ -233,14 +261,9 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
             padding: 5px 12px; font-weight: 800; font-size: 0.75rem;
         }
 
-        /* MOBILE RESPONSIVE QUERIES */
         @media (max-width: 991.98px) {
-            .content-wrapper { 
-                margin-left: 0; 
-                padding: 20px; 
-            }
+            .content-wrapper { margin-left: 0; padding: 20px; }
             .table-card { padding: 1.25rem; border-radius: 16px; }
-            .single-stat-card { max-width: 100%; }
             .glass-header-container { padding: 20px; border-radius: 20px; margin-bottom: 30px; }
         }
     </style>
@@ -253,21 +276,57 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
         
         <?php include 'header.php'; ?>
 
-        <div class="row mb-4">
-            <div class="col-12">
+        <div class="row mb-4 g-3">
+            <div class="col-12 col-sm-6 col-md-3">
                 <div class="single-stat-card">
                     <?php 
-                        $icon_class = "fa-desktop"; $bg_class = "bg-active";
-                        if ($current_status == 'For Disposal') { $icon_class = "fa-trash-alt"; $bg_class = "bg-disposal"; }
-                        if ($current_status == 'Replacement') { $icon_class = "fa-sync-alt"; $bg_class = "bg-replacement"; }
-                        if ($current_status == 'In Storage') { $icon_class = "fa-box"; $bg_class = "bg-storage"; }
+                        $icon_class = "fa-desktop"; 
+                        if ($current_status == 'For Disposal') { $icon_class = "fa-trash-alt"; }
+                        if ($current_status == 'Replacement') { $icon_class = "fa-sync-alt"; }
+                        if ($current_status == 'In Storage') { $icon_class = "fa-box"; }
                     ?>
-                    <div class="icon-square <?php echo $bg_class; ?>">
+                    <div class="icon-square">
                         <i class="fas <?php echo $icon_class; ?>"></i>
                     </div>
                     <div>
-                        <small class="text-muted fw-800 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;"><?php echo htmlspecialchars($current_status); ?> Assets</small>
-                        <h2 class="m-0 fw-800" style="color: #1e293b; letter-spacing: -1px;"><?php echo $asset_count; ?></h2>
+                        <p class="stat-label"><?php echo htmlspecialchars($current_status); ?> Assets</p>
+                        <h2 class="stat-number"><?php echo $asset_count; ?></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="single-stat-card">
+                    <div class="icon-square">
+                        <i class="fas fa-computer"></i>
+                    </div>
+                    <div>
+                        <p class="stat-label">Desktop Assets</p>
+                        <h2 class="stat-number"><?php echo $desktop_count; ?></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="single-stat-card">
+                    <div class="icon-square">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <div>
+                        <p class="stat-label">Laptop Assets</p>
+                        <h2 class="stat-number"><?php echo $laptop_count; ?></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="single-stat-card">
+                    <div class="icon-square">
+                        <i class="fas fa-display"></i>
+                    </div>
+                    <div>
+                        <p class="stat-label">Monitor Assets</p>
+                        <h2 class="stat-number"><?php echo $monitor_count; ?></h2>
                     </div>
                 </div>
             </div>
@@ -296,7 +355,7 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
                             <th>Asset Tag</th>
                             <th>Serial Number</th>
                             <th>Brand & Model</th>
-                            <th>Type & Year</th>
+
                             <th>Location</th>
                             <th>Status</th>
                             <th>Date Created</th>
@@ -310,8 +369,8 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
                                 <td><?php echo htmlspecialchars($row['inventory_date'] ?? '—'); ?></td>
                                 <td><?php echo htmlspecialchars($row['asset_tag'] ?? '—'); ?></td>
                                 <td><?php echo htmlspecialchars($row['serial_number'] ?? '—'); ?></td>
+                               
                                 <td><?php echo htmlspecialchars($row['brand_model'] ?? '—'); ?></td>
-                                <td><?php echo htmlspecialchars($row['type_year'] ?? '—'); ?></td>
                                 <td><span class="badge-location"><?php echo htmlspecialchars($row['display_client_name']); ?></span></td>
                                 <td><?php echo htmlspecialchars($row['status']); ?></td>
                                 <td><?php echo htmlspecialchars($row['created_at']); ?></td>

@@ -232,6 +232,32 @@ $beta_line_data  = getBuildingClientDetailedData($conn, 2);
         @media (max-width: 992px) {
             .content-wrapper { margin-left: 0; padding: 20px; }
             .glass-header-container { padding: 20px; border-radius: 20px; }
+
+            /* Pop effect kapag tinatapatan at pinipindot ang cards */
+.status-card {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    cursor: pointer;
+}
+
+/* Hover State: Umaangat at nagkakaroon ng mas malalim na anino */
+.status-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Active State (CLICK EFFECT): Lalapat o liliit ng kaunti na parang totoong button na pinindot */
+.status-card:active {
+    transform: scale(0.95) translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Para hindi biglang mawala ang animation pagka-click bago lumipat ng page */
+.text-decoration-none {
+    display: block;
+    -webkit-tap-highlight-color: transparent; /* Tinatanggal ang default mobile blue highlight */
+}
         }
     </style>
 </head>
