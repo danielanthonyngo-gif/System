@@ -753,6 +753,22 @@ $sub_title = "Asset Tracking System";
                         <label class="form-label-custom">Brand & Model</label>
                         <input type="text" name="brand_model" id="edit_model" class="input-custom" required>
                     </div>
+                     <div class="col-md-6">
+                        <label class="form-label-custom">Processor (CPU)</label>
+                        <input type="text" name="processor" id="edit_processor" class="input-custom" required>
+                    </div>
+                     <div class="col-md-6">
+                        <label class="form-label-custom">Memory (RAM)</label>
+                        <input type="text" name="memory" id="edit_memory" class="input-custom" required>
+                    </div>
+                     <div class="col-md-6">
+                        <label class="form-label-custom">Storage</label>
+                        <input type="text" name="storage" id="edit_storage" class="input-custom" required>
+                    </div>
+                     <div class="col-md-6">
+                        <label class="form-label-custom">Assign Employee</label>
+                        <input type="text" name="assign" id="edit_assign" class="input-custom" required>
+                    </div>
                         <div class="col-md-6">
                         <label class="form-label-custom">Location</label>
                         <select name="location" id="edit_loc" class="input-custom" required>
