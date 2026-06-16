@@ -7,7 +7,11 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// 1. KUNIN ANG LOCATION AT STATUS MULA SA URL
+// 1. KUNIN ANG LOCATION AT 
+// 
+// 
+// 
+// US MULA SA URL
 $location_id = isset($_GET['location']) ? mysqli_real_escape_string($conn, $_GET['location']) : '';
 $current_status = isset($_GET['status']) ? mysqli_real_escape_string($conn, $_GET['status']) : 'Active';
 
@@ -361,7 +365,7 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
                             <th>Date Created</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="assetTableBody">
                         <?php if($assets && mysqli_num_rows($assets) > 0): ?>
                             <?php while($row = mysqli_fetch_assoc($assets)): ?>
                             <tr class="asset-row">
@@ -378,7 +382,7 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="9" class="text-center py-4">No assets found for this status.</td>
+                                <td colspan="8" class="text-center py-4">No assets found for this status.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -389,5 +393,23 @@ $display_name = $_SESSION['user_full_name'] ?? 'Daniel';
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.getElementById('assetSearch').addEventListener('input', function() {
+            let query = this.value.toLowerCase().trim();
+            let rows = document.querySelectorAll('#assetTableBody .asset-row');
+
+            rows.forEach(function(row) {
+                // Kinukuha nito ang lahat ng text content sa loob ng <tr> (lahat ng td kasama ang serial)
+                let text = row.textContent.toLowerCase();
+                
+                if(text.includes(query)) {
+                    row.style.display = ""; // Ipakita ang row kung tugma
+                } else {
+                    row.style.display = "none"; // Itago kung hindi tugma
+                }
+            });
+        });
+    </script>
 </body>
 </html>
