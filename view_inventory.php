@@ -84,13 +84,26 @@ if (isset($_POST['save_asset'])) {
         $table_name = "assets"; // Admin can save directly to main table
     }
 
-    $serial    = mysqli_real_escape_string($conn, $_POST['serial_number']);
-    $model     = mysqli_real_escape_string($conn, $_POST['brand_model']);
-    $type      = mysqli_real_escape_string($conn, $_POST['type']);
-    $loc       = mysqli_real_escape_string($conn, $_POST['location']);
-    $date      = mysqli_real_escape_string($conn, $_POST['date']);
-    $status    = mysqli_real_escape_string($conn, $_POST['status']);
+    // --- MGA UNANG INPUTS ---
+    $serial    = mysqli_real_escape_string($conn, $_POST['serial_number'] ?? '');
+    $model     = mysqli_real_escape_string($conn, $_POST['brand_model'] ?? '');
+    $type      = mysqli_real_escape_string($conn, $_POST['type'] ?? '');
+    $loc       = mysqli_real_escape_string($conn, $_POST['location'] ?? '');
+    $date      = mysqli_real_escape_string($conn, $_POST['date'] ?? '');
+    $status    = mysqli_real_escape_string($conn, $_POST['status'] ?? '');
     
+    // --- MGA BAGONG INPUTS (May solid handling at trim para walang empty strings) ---
+    $processor = mysqli_real_escape_string($conn, trim($_POST['processor'] ?? ''));
+    $storage   = mysqli_real_escape_string($conn, trim($_POST['storage'] ?? ''));
+    
+    // Kunin ang RAM kahit 'memory_ram' o 'ram' ang name sa HTML
+    $ram_value = $_POST['memory_ram'] ?? ($_POST['ram'] ?? '');
+    $ram       = mysqli_real_escape_string($conn, trim($ram_value));
+    
+    // Kunin ang Employee kahit 'assigned_employee' o 'employee' ang name sa HTML
+    $emp_value = $_POST['assigned_employee'] ?? ($_POST['employee'] ?? '');
+    $employee  = mysqli_real_escape_string($conn, trim($emp_value));
+
     // Generate or use manual asset tag
     $asset_tag = ! empty($_POST['manual_tag']) 
         ? mysqli_real_escape_string($conn, $_POST['manual_tag']) 
@@ -110,25 +123,58 @@ if (isset($_POST['save_asset'])) {
         exit();
     }
 
-    $insert = "INSERT INTO $table_name  (inventory_date, asset_tag, serial_number, brand_model, asset_type, location, status) VALUES ('$date', '$asset_tag', '$serial', '$model', '$type', '$loc', '$status')";
+    // --- SEGURADONG SQL INSERT STATEMENT ---
+    $insert = "INSERT INTO $table_name (
+        inventory_date, 
+        asset_tag, 
+        serial_number, 
+        brand_model, 
+        processor, 
+        storage, 
+        memory_ram, 
+        asset_type, 
+        location, 
+        status, 
+        assigned_employee
+    ) VALUES (
+        '$date', 
+        '$asset_tag', 
+        '$serial', 
+        '$model', 
+        '$processor', 
+        '$storage', 
+        '$ram', 
+        '$type', 
+        '$loc', 
+        '$status', 
+        '$employee'
+    )";
 
     if (mysqli_query($conn, $insert)) {
         $new_asset_id = mysqli_insert_id($conn);
 
+        // --- FULL AUDIT TRAIL LOG ---
         logAudit($conn, 'ADD_ASSET', 'asset', $new_asset_id, null, [
-            'inventory_date' => $date,
-            'asset_tag'      => $asset_tag,
-            'serial_number'  => $serial,
-            'brand_model'    => $model,
-            'asset_type'     => $type,
-            'location'       => $loc,
-            'status'         => $status,
+            'inventory_date'    => $date,
+            'asset_tag'         => $asset_tag,
+            'serial_number'     => $serial,
+            'brand_model'       => $model,
+            'processor'         => $processor,
+            'storage'           => $storage,
+            'memory_ram'        => $ram,
+            'asset_type'        => $type,
+            'location'          => $loc,
+            'status'            => $status,
+            'assigned_employee' => $employee,
         ]);
+
         header("Location: view_inventory.php?msg=success_create");
         exit();
+    } else {
+        // Ito ang magsasabi kung kulang o mali ang column sa sinalpakan mong table
+        die("Database Error on table [$table_name]: " . mysqli_error($conn));
     }
 }
-
     // for delete action
     if (isset($_GET['delete_id'])) {
         $delete_id = mysqli_real_escape_string($conn, $_GET['delete_id']);
