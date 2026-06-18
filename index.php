@@ -83,7 +83,6 @@ function getBuildingClientDetailedData($conn, $building_id) {
     ];
 }
 
-// Alpha Building (id: 1), Beta Building (id: 2)
 $alpha_line_data = getBuildingClientDetailedData($conn, 1);
 $beta_line_data  = getBuildingClientDetailedData($conn, 2);
 ?>
@@ -184,28 +183,60 @@ $beta_line_data  = getBuildingClientDetailedData($conn, 2);
             box-shadow: 0 8px 20px rgba(142, 68, 173, 0.25);
         }
 
+        /* --- STYLES FOR SUMMARY CARDS --- */
         .status-card {
             border: none;
-            border-radius: 25px;
+            border-radius: 24px;
             color: white;
-            padding: 30px;
+            padding: 24px 28px;
             position: relative;
             overflow: hidden;
-            transition: 0.3s;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.03);
             cursor: pointer;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        .status-card:hover { 
-            transform: translateY(-5px); 
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 22px rgba(0, 0, 0, 0.12);
         }
 
-        .card-icon { font-size: 3.5rem; opacity: 0.2; position: absolute; right: -10px; bottom: -10px; }
+        .status-card:active {
+            transform: scale(0.96) translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-card p {
+            font-size: 0.8rem !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px !important;
+            opacity: 0.95;
+        }
+
+        .status-card h2 {
+            font-size: 2.8rem !important;
+            font-weight: 700 !important;
+            margin: 0 !important;
+            line-height: 1;
+        }
+
+        .card-icon { 
+            font-size: 4.5rem; 
+            opacity: 0.12; 
+            position: absolute; 
+            right: -5px; 
+            bottom: -15px; 
+        }
         
-        .bg-inuse { background: linear-gradient(135deg, #AD49E1 0%, #AD49E1 100%); }
-        .bg-disposal { background: linear-gradient(135deg, #62109F 0%, #62109F 100%); }
-        .bg-replacement { background: linear-gradient(135deg, #2E073F 0%, #2E073F 100%); }
-        .bg-storage { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); }
+        .bg-inuse { background: #b44ce6; }
+        .bg-disposal { background: #5c0ba8; }
+        .bg-replacement { background: #260538; }
+        .bg-storage { background: #5d666e; }
 
         .chart-card {
             background: white;
@@ -229,92 +260,63 @@ $beta_line_data  = getBuildingClientDetailedData($conn, 2);
         .table thead th { color: #a3aed0; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 15px 20px; border-bottom: 1px solid #f1f1f7; }
         .table tbody td { padding: 15px 20px; color: #2b3674; font-weight: 600; font-size: 0.85rem; vertical-align: middle; }
 
+        .text-decoration-none {
+            display: block;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         @media (max-width: 992px) {
             .content-wrapper { margin-left: 0; padding: 20px; }
             .glass-header-container { padding: 20px; border-radius: 20px; }
-
-            /* Pop effect kapag tinatapatan at pinipindot ang cards */
-.status-card {
-    position: relative;
-    overflow: hidden;
-    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-    cursor: pointer;
-}
-
-/* Hover State: Umaangat at nagkakaroon ng mas malalim na anino */
-.status-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* Active State (CLICK EFFECT): Lalapat o liliit ng kaunti na parang totoong button na pinindot */
-.status-card:active {
-    transform: scale(0.95) translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Para hindi biglang mawala ang animation pagka-click bago lumipat ng page */
-.text-decoration-none {
-    display: block;
-    -webkit-tap-highlight-color: transparent; /* Tinatanggal ang default mobile blue highlight */
-}
         }
     </style>
 </head>
 <body>
 
-<?php include 'aside.php';
-    $title     = "Dashboard";
-    $sub_title = "Asset Record & Monitoring"; ?>
+<?php 
+include 'aside.php';
+$title     = "Dashboard";
+$sub_title = "Asset Record & Monitoring"; 
+?>
 
 <div class="content-wrapper">
   <?php include 'header.php'; ?>
     
     <div class="container-fluid p-0">
-        <!-- 1. STATUS CARDS -->
         <div class="row g-4 mb-4">
             <div class="col-md-3">
-                <a href="index_page.php?status=Active" class="text-decoration-none">
-                    <div class="status-card bg-inuse">
-                        <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Use Assets</p>
-                        <h2 class="display-6 fw-bold mb-0"><?php echo $count_in_use; ?></h2>
-                        <i class="fas fa-desktop card-icon"></i>
-                    </div>
-                </a>
+                <div class="status-card bg-inuse asset-card-trigger" data-bs-toggle="modal" data-bs-target="#assetDetailsModal" data-status="Active" data-title="In Use Assets">
+                    <p class="text-uppercase small fw-bold">In Use Assets</p>
+                    <h2 class="fw-bold"><?php echo $count_in_use; ?></h2>
+                    <i class="fas fa-desktop card-icon"></i>
+                </div>
             </div>
             
             <div class="col-md-3">
-                <a href="index_page.php?status=For Disposal" class="text-decoration-none">
-                    <div class="status-card bg-disposal">
-                        <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">For Disposal</p>
-                        <h2 class="display-6 fw-bold mb-0"><?php echo $count_disposal; ?></h2>
-                        <i class="fas fa-dumpster card-icon"></i>
-                    </div>
-                </a>
+                <div class="status-card bg-disposal asset-card-trigger" data-bs-toggle="modal" data-bs-target="#assetDetailsModal" data-status="For Disposal" data-title="For Disposal">
+                    <p class="text-uppercase small fw-bold">For Disposal</p>
+                    <h2 class="fw-bold"><?php echo $count_disposal; ?></h2>
+                    <i class="fas fa-dumpster card-icon"></i>
+                </div>
             </div>
             
             <div class="col-md-3">
-                <a href="index_page.php?status=Replacement" class="text-decoration-none">
-                    <div class="status-card bg-replacement">
-                        <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">Replacement</p>
-                        <h2 class="display-6 fw-bold mb-0"><?php echo $count_replacement; ?></h2>
-                        <i class="fas fa-tools card-icon"></i>
-                    </div>
-                </a>
+                <div class="status-card bg-replacement asset-card-trigger" data-bs-toggle="modal" data-bs-target="#assetDetailsModal" data-status="Replacement" data-title="Replacement">
+                    <p class="text-uppercase small fw-bold">Replacement</p>
+                    <h2 class="fw-bold"><?php echo $count_replacement; ?></h2>
+                    <i class="fas fa-tools card-icon"></i>
+                </div>
             </div>
             
             <div class="col-md-3">
-                <a href="index_page.php?status=In Storage" class="text-decoration-none">
-                    <div class="status-card bg-storage">
-                        <p class="mb-1 text-uppercase small fw-bold" style="letter-spacing: 1px;">In Storage</p>
-                        <h2 class="display-6 fw-bold mb-0"><?php echo $count_storage; ?></h2>
-                        <i class="fas fa-boxes-stacked card-icon"></i>
-                    </div>
-                </a>
+                <div class="status-card bg-storage asset-card-trigger" data-bs-toggle="modal" data-bs-target="#assetDetailsModal" data-status="In Storage" data-title="In Storage">
+                    <p class="text-uppercase small fw-bold">In Storage</p>
+                    <h2 class="fw-bold"><?php echo $count_storage; ?></h2>
+                    <i class="fas fa-boxes-stacked card-icon"></i>
+                </div>
             </div>
         </div>
 
-        <!-- 2. PIE CHART AT RECENT ACTIVITIES (TOP) -->
         <div class="row g-4 mb-4">
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
@@ -396,7 +398,6 @@ $beta_line_data  = getBuildingClientDetailedData($conn, 2);
             </div>
         </div>
 
-        <!-- 3. LINE GRAPHS KADA BUILDING -->
         <div class="row g-4">
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
@@ -421,9 +422,70 @@ $beta_line_data  = getBuildingClientDetailedData($conn, 2);
     </div>
 </div>
 
+<div class="modal fade" id="assetDetailsModal" tabindex="-1" aria-labelledby="assetDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #2E073F 0%, #7A1CAC 100%); border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 20px 30px;">
+                <h5 class="modal-title fw-bold" id="assetDetailsModalLabel">Asset List</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="modal-dynamic-content">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-2">Loading asset records...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light" style="border-bottom-left-radius: 25px; border-bottom-right-radius: 25px; padding: 15px 30px;">
+                <button type="button" class="btn btn-secondary rounded-pill px-4 fw-600" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // --- POP-UP AJAX LOGIC FIX ---
+    document.addEventListener("DOMContentLoaded", function () {
+        const assetModal = document.getElementById('assetDetailsModal');
+        if (assetModal) {
+            assetModal.addEventListener('show.bs.modal', function (event) {
+                // Kunin kung anong partikular na element/card ang nag-trigger sa modal
+                const triggerButton = event.relatedTarget; 
+                if (!triggerButton) return;
+
+                const status = triggerButton.getAttribute('data-status'); 
+                const title = triggerButton.getAttribute('data-title'); 
+                
+                assetModal.querySelector('.modal-title').textContent = title;
+                
+                const contentContainer = document.getElementById('modal-dynamic-content');
+                contentContainer.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border" style="color:#7A1CAC" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2 small">Fetching data for ${title}...</p>
+                    </div>
+                `;
+                
+                // Ajax GET request patungo sa hiwalay mong fetch file
+                fetch(`index_page.php?status=${encodeURIComponent(status)}`)
+                    .then(response => response.text())
+                    .then(htmlData => {
+                        contentContainer.innerHTML = htmlData;
+                    })
+                    .catch(err => {
+                        console.error("AJAX Error:", err);
+                        contentContainer.innerHTML = `<div class="alert alert-danger text-center">Master, nagka-error sa pag-load ng data.</div>`;
+                    });
+            });
+        }
+    });
+
+    // --- CHARTS CONFIGURATIONS ---
     const lineChartOptionsBase = {
         responsive: true,
         maintainAspectRatio: false,

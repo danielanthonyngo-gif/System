@@ -622,7 +622,7 @@ $sub_title = "Asset Tracking System";
                 </table>
             </div>
         </div>
-
+ 
         <?php if ($total_pages > 1): ?>
         <div class="d-flex justify-content-between align-items-center mt-3 px-3 no-export">
             <div class="small text-muted">
