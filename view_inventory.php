@@ -41,6 +41,12 @@ if (isset($_POST['update_asset'])) {
     $location = mysqli_real_escape_string($conn, $_POST['location']);
     $status   = mysqli_real_escape_string($conn, $_POST['status']);
 
+    // DAGDAG: Kunin ang mga bagong data mula sa form
+    $processor         = mysqli_real_escape_string($conn, $_POST['processor']);
+    $storage           = mysqli_real_escape_string($conn, $_POST['storage']);
+    $memory_ram        = mysqli_real_escape_string($conn, $_POST['memory_ram']);
+    $assigned_employee = mysqli_real_escape_string($conn, $_POST['assigned_employee']);
+
     // Check duplicate Asset TAG (exclude current asset)
     $check_tag = mysqli_query($conn, "SELECT id FROM assets WHERE asset_tag = '$tag' AND id != '$asset_id'");
     if (mysqli_num_rows($check_tag) > 0) {
@@ -58,15 +64,31 @@ if (isset($_POST['update_asset'])) {
     $old_query = mysqli_query($conn, "SELECT * FROM assets WHERE id='$asset_id'");
     $old_data  = mysqli_fetch_assoc($old_query);
 
-    $update_query = "UPDATE assets SET asset_tag='$tag', serial_number='$serial', brand_model='$model', location='$location', status='$status' WHERE id='$asset_id'";
+    // INAYOS: Idinagdag sa UPDATE query ang mga nawawalang columns
+    $update_query = "UPDATE assets SET 
+                        asset_tag='$tag', 
+                        serial_number='$serial', 
+                        brand_model='$model', 
+                        location='$location', 
+                        status='$status',
+                        processor='$processor',
+                        storage='$storage',
+                        memory_ram='$memory_ram',
+                        assigned_employee='$assigned_employee' 
+                     WHERE id='$asset_id'";
 
     if (mysqli_query($conn, $update_query)) {
+        // INAYOS: Idinagdag din sa audit log para ma-track kung sino ang nagbago
         logAudit($conn, 'UPDATE_ASSET', 'asset', $asset_id, $old_data, [
-            'asset_tag'     => $tag,
-            'serial_number' => $serial,
-            'brand_model'   => $model,
-            'location'      => $location,
-            'status'        => $status,
+            'asset_tag'         => $tag,
+            'serial_number'     => $serial,
+            'brand_model'       => $model,
+            'location'          => $location,
+            'status'            => $status,
+            'processor'         => $processor,
+            'storage'           => $storage,
+            'memory_ram'        => $memory_ram,
+            'assigned_employee' => $assigned_employee,
         ]);
         header("Location: view_inventory.php?msg=success_update");
         exit();
