@@ -718,7 +718,6 @@ $sub_title = "Asset Tracking System";
                             <option>Laptop</option>
                             <option>Desktop</option>
                             <option>Monitor</option>
-                            <option>Printer</option>
                         </select>
                     </div>
                     <div class="col-md-4">
