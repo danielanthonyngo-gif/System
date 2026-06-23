@@ -146,31 +146,7 @@ if (isset($_POST['save_asset'])) {
     }
 
     // --- SEGURADONG SQL INSERT STATEMENT ---
-    $insert = "INSERT INTO $table_name (
-        inventory_date, 
-        asset_tag, 
-        serial_number, 
-        brand_model, 
-        processor, 
-        storage, 
-        memory_ram, 
-        asset_type, 
-        location, 
-        status, 
-        assigned_employee
-    ) VALUES (
-        '$date', 
-        '$asset_tag', 
-        '$serial', 
-        '$model', 
-        '$processor', 
-        '$storage', 
-        '$ram', 
-        '$type', 
-        '$loc', 
-        '$status', 
-        '$employee'
-    )";
+   $insert = "INSERT INTO $table_name (inventory_date, asset_tag, serial_number, brand_model, processor, storage, memory_ram, asset_type, year_model, location, status, assigned_employee) VALUES ('$date', '$asset_tag', '$serial', '$model', '$processor', '$storage', '$ram', '$type', '$year_model', '$loc', '$status', '$employee')";
 
     if (mysqli_query($conn, $insert)) {
         $new_asset_id = mysqli_insert_id($conn);
@@ -946,14 +922,25 @@ $sub_title = "Asset Tracking System";
 
     // 4. EDIT BUTTON MAPPING
     $('.editBtn').on('click', function() {
-        $('#edit_id').val($(this).data('id'));
-        $('#edit_tag').val($(this).data('tag'));
-        $('#edit_serial').val($(this).data('serial'));
-        $('#edit_model').val($(this).data('model'));
-        $('#edit_loc').val($(this).data('loc'));
-        $('#edit_status').val($(this).data('status'));
-        new bootstrap.Modal(document.getElementById('editModal')).show();
-    });
+    // Mga dating fields
+    $('#edit_id').val($(this).data('id'));
+    $('#edit_tag').val($(this).data('tag'));
+    $('#edit_serial').val($(this).data('serial'));
+    $('#edit_model').val($(this).data('model'));
+    $('#edit_loc').val($(this).data('loc'));
+    $('#edit_status').val($(this).data('status'));
+
+    // Mga bagong dagdag base sa phpMyAdmin mo
+    $('#edit_processor').val($(this).data('processor'));
+    $('#edit_storage').val($(this).data('storage'));
+    $('#edit_memory_ram').val($(this).data('memory_ram'));
+    $('#edit_asset_type').val($(this).data('asset_type'));
+    $('#edit_year_model').val($(this).data('year_model'));
+    $('#edit_assigned_employee').val($(this).data('assigned_employee'));
+
+    // Pagbukas ng Modal
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+});
 
     // 5. PDF EXPORT
     function exportInventoryPDF() {
