@@ -452,7 +452,6 @@ $sub_title = "Asset Record & Monitoring";
         const assetModal = document.getElementById('assetDetailsModal');
         if (assetModal) {
             assetModal.addEventListener('show.bs.modal', function (event) {
-                // Kunin kung anong partikular na element/card ang nag-trigger sa modal
                 const triggerButton = event.relatedTarget; 
                 if (!triggerButton) return;
 
@@ -471,7 +470,6 @@ $sub_title = "Asset Record & Monitoring";
                     </div>
                 `;
                 
-                // Ajax GET request patungo sa hiwalay mong fetch file
                 fetch(`index_page.php?status=${encodeURIComponent(status)}`)
                     .then(response => response.text())
                     .then(htmlData => {
@@ -486,7 +484,7 @@ $sub_title = "Asset Record & Monitoring";
     });
 
     // --- CHARTS CONFIGURATIONS ---
-    const lineChartOptionsBase = {
+    const barChartOptionsBase = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -510,10 +508,10 @@ $sub_title = "Asset Record & Monitoring";
         }
     };
 
-    // Alpha Line Chart
+    // Alpha Bar Chart
     const alphaLineCtx = document.getElementById('alphaLineChart').getContext('2d');
     new Chart(alphaLineCtx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: <?php echo json_encode($alpha_line_data['labels']); ?>,
             datasets: [
@@ -521,38 +519,32 @@ $sub_title = "Asset Record & Monitoring";
                     label: 'In Use Rate',
                     data: <?php echo json_encode($alpha_line_data['active']); ?>,
                     borderColor: '#AD49E1',
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#AD49E1',
-                    tension: 0.2
+                    backgroundColor: '#AD49E1',
+                    borderWidth: 1
                 },
                 {
                     label: 'Disposal Rate',
                     data: <?php echo json_encode($alpha_line_data['disposal']); ?>,
                     borderColor: '#62109F',
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#62109F',
-                    tension: 0.2
+                    backgroundColor: '#62109F',
+                    borderWidth: 1
                 },
                 {
                     label: 'Replacement Rate',
                     data: <?php echo json_encode($alpha_line_data['replacement']); ?>,
                     borderColor: '#2E073F',
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#2E073F',
-                    tension: 0.2
+                    backgroundColor: '#2E073F',
+                    borderWidth: 1
                 }
             ]
         },
-        options: lineChartOptionsBase
+        options: barChartOptionsBase
     });
 
-    // Beta Line Chart
+    // Beta Bar Chart
     const betaLineCtx = document.getElementById('betaLineChart').getContext('2d');
     new Chart(betaLineCtx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: <?php echo json_encode($beta_line_data['labels']); ?>,
             datasets: [
@@ -560,32 +552,26 @@ $sub_title = "Asset Record & Monitoring";
                     label: 'In Use Rate',
                     data: <?php echo json_encode($beta_line_data['active']); ?>,
                     borderColor: '#AD49E1',
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#AD49E1',
-                    tension: 0.2
+                    backgroundColor: '#AD49E1',
+                    borderWidth: 1
                 },
                 {
                     label: 'Disposal Rate',
                     data: <?php echo json_encode($beta_line_data['disposal']); ?>,
                     borderColor: '#62109F',
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#62109F',
-                    tension: 0.2
+                    backgroundColor: '#62109F',
+                    borderWidth: 1
                 },
                 {
                     label: 'Replacement Rate',
                     data: <?php echo json_encode($beta_line_data['replacement']); ?>,
                     borderColor: '#2E073F',
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#2E073F',
-                    tension: 0.2
+                    backgroundColor: '#2E073F',
+                    borderWidth: 1
                 }
             ]
         },
-        options: lineChartOptionsBase
+        options: barChartOptionsBase
     });
 
     // PIE CHART CONFIG
