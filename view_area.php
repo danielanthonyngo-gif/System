@@ -362,7 +362,7 @@
                 <div class="area-card text-center">
                     <a onclick="openEditModal(<?php echo $id; ?>, '<?php echo addslashes($name); ?>', 'Beta')" class="edit-overlay"><i class="fas fa-pencil-alt"></i></a>
                     <a onclick="confirmDelete(<?php echo $id; ?>, '<?php echo addslashes($name); ?>')" class="delete-overlay"><i class="fas fa-times"></i></a>
-                    
+
                     <a href="#" data-location="<?php echo htmlspecialchars($name); ?>" class="text-decoration-none view-assets-popup-trigger">
                         <div class="card-header-label"><?php echo htmlspecialchars($name); ?></div>
                         <div class="pc-icon-wrapper"><i class="fas fa-desktop"></i></div>

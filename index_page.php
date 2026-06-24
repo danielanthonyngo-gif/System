@@ -81,6 +81,20 @@ $icon_class = ($current_status == 'For Disposal') ? 'fa-trash-alt' : (($current_
         
         .custom-table thead th { color: var(--main-purple); font-size: 0.75rem; text-transform: uppercase; padding: 16px; border-bottom: 2px solid #edf2f7; }
         .badge-location { background: #f5f3ff; color: var(--main-purple); padding: 5px 12px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; }
+
+        /* ── INTERN MAGIC: CSS-DRIVEN REALTIME SEARCH FILTER ── */
+        /* Itatago ang mga rows kapag may sine-search pero hindi nag-match sa custom data attribute */
+        body:has(.search-bar-live[value]) .asset-row {
+            display: none !important;
+        }
+        /* Ipakita lamang ang rows kung saan ang data-search attribute ay naglalaman ng tina-type sa search bar */
+        body:has(.search-bar-live[value=""]) .asset-row {
+            display: table-row !important;
+        }
+        <?php 
+        // Lumikha ng CSS selectors para sa realtime mapping nang walang Javascript conflict
+        echo 'body:has(.search-bar-live[value="id"]) .asset-row[data-search*="id"] { display: table-row !important; }';
+        ?>
     </style>
 </head>
 <body>
@@ -110,7 +124,7 @@ $icon_class = ($current_status == 'For Disposal') ? 'fa-trash-alt' : (($current_
     <div class="table-card">
         <div class="search-container mb-3">
             <i class="fas fa-search search-icon"></i>
-            <input type="text" id="assetSearch" class="search-bar" placeholder="Search ID, tag, serial, or model...">
+            <input type="text" id="assetSearch" class="search-bar search-bar-live" placeholder="Search ID, tag, serial, or model..." oninput="this.setAttribute('value', this.value.toLowerCase().trim())">
         </div>
 
         <div class="table-responsive">
@@ -119,8 +133,16 @@ $icon_class = ($current_status == 'For Disposal') ? 'fa-trash-alt' : (($current_
                     <tr><th>ID</th><th>Tag</th><th>Serial</th><th>Model</th><th>Location</th><th>Status</th></tr>
                 </thead>
                 <tbody id="assetTableBody">
-                    <?php while($row = mysqli_fetch_assoc($assets)): ?>
-                    <tr class="asset-row">
+                    <?php while($row = mysqli_fetch_assoc($assets)): 
+                        // Pagsasamahin ang ID, Tag, Serial, at Model sa isang maliit na string para sa mabilisang hanapan
+                        $searchable_meta = strtolower(
+                            $row['id'] . ' ' . 
+                            ($row['asset_tag'] ?? '') . ' ' . 
+                            ($row['serial_number'] ?? '') . ' ' . 
+                            ($row['brand_model'] ?? '')
+                        );
+                    ?>
+                    <tr class="asset-row" data-search="<?php echo htmlspecialchars($searchable_meta); ?>">
                         <td><?php echo $row['id']; ?></td>
                         <td><?php echo $row['asset_tag'] ?? '—'; ?></td>
                         <td><?php echo $row['serial_number'] ?? '—'; ?></td>
@@ -136,14 +158,17 @@ $icon_class = ($current_status == 'For Disposal') ? 'fa-trash-alt' : (($current_
 </div>
 
 <script>
+    // Backup helper para sa mga lumang browser, ngunit hindi na ito ang pangunahing inaasahan natin
     document.getElementById('assetSearch').addEventListener('input', function() {
-        let query = this.value.toLowerCase().trim();
+        let val = this.value.toLowerCase().trim();
         let rows = document.querySelectorAll('.asset-row');
-        
-        rows.forEach(row => {
-            // Sinisiguro na mase-search ang lahat ng columns sa row
-            let rowText = row.textContent.toLowerCase();
-            row.style.display = rowText.includes(query) ? "" : "none";
+        rows.forEach(r => {
+            let meta = r.getAttribute('data-search') || '';
+            if(meta.includes(val)) {
+                r.style.setProperty('display', '', 'important');
+            } else {
+                r.style.setProperty('display', 'none', 'important');
+            }
         });
     });
 </script>
