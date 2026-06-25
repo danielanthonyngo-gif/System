@@ -283,6 +283,7 @@ $sub_title = "Asset Record & Monitoring";
   <?php include 'header.php'; ?>
     
     <div class="container-fluid p-0">
+        <!-- Summary Cards Row -->
         <div class="row g-4 mb-4">
             <div class="col-md-3">
                 <div class="status-card bg-inuse asset-card-trigger" data-bs-toggle="modal" data-bs-target="#assetDetailsModal" data-status="Active" data-title="In Use Assets">
@@ -317,6 +318,7 @@ $sub_title = "Asset Record & Monitoring";
             </div>
         </div>
 
+        <!-- Charts and Activities Row -->
         <div class="row g-4 mb-4">
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
@@ -398,6 +400,7 @@ $sub_title = "Asset Record & Monitoring";
             </div>
         </div>
 
+        <!-- Building Analysis Row -->
         <div class="row g-4">
             <div class="col-xl-6 col-lg-12">
                 <div class="chart-card">
@@ -422,6 +425,9 @@ $sub_title = "Asset Record & Monitoring";
     </div>
 </div>
 
+<!-- ========================================== -->
+<!-- MODAL COMPONENT (WITH FIXED PERMANENT SEARCH BAR) -->
+<!-- ========================================== -->
 <div class="modal fade" id="assetDetailsModal" tabindex="-1" aria-labelledby="assetDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
@@ -429,6 +435,17 @@ $sub_title = "Asset Record & Monitoring";
                 <h5 class="modal-title fw-bold" id="assetDetailsModalLabel">Asset List</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            
+            <!-- PERMANENT SEARCH BAR CONTAINER -->
+            <div class="px-4 pt-3 pb-2 bg-light border-bottom">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0" style="border-radius: 20px 0 0 20px;">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="modalAssetSearch" class="form-control border-start-0" placeholder="Type to search asset tag, serial, model, brand or location..." style="border-radius: 0 20px 20px 0; box-shadow: none; border-color: #dee2e6;">
+                </div>
+            </div>
+
             <div class="modal-body p-4" id="modal-dynamic-content">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
@@ -447,11 +464,15 @@ $sub_title = "Asset Record & Monitoring";
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // --- POP-UP AJAX LOGIC FIX ---
     document.addEventListener("DOMContentLoaded", function () {
         const assetModal = document.getElementById('assetDetailsModal');
+        const searchInput = document.getElementById('modalAssetSearch');
+
         if (assetModal) {
+            // I-clear ang search input sa tuwing bubuksan o isasara ang modal
             assetModal.addEventListener('show.bs.modal', function (event) {
+                if(searchInput) searchInput.value = ''; 
+                
                 const triggerButton = event.relatedTarget; 
                 if (!triggerButton) return;
 
@@ -470,6 +491,7 @@ $sub_title = "Asset Record & Monitoring";
                     </div>
                 `;
                 
+                // Kunin ang table galing sa backend via AJAX
                 fetch(`index_page.php?status=${encodeURIComponent(status)}`)
                     .then(response => response.text())
                     .then(htmlData => {
@@ -480,6 +502,30 @@ $sub_title = "Asset Record & Monitoring";
                         contentContainer.innerHTML = `<div class="alert alert-danger text-center">Master, nagka-error sa pag-load ng data.</div>`;
                     });
             });
+
+            // --- 100% WORKING LIVE SEARCH LOGIC ---
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    const filterText = this.value.toLowerCase().trim();
+                    const contentContainer = document.getElementById('modal-dynamic-content');
+                    
+                    // Hanapin ang table rows (`<tr>`) na kakagaling lang sa index_page.php
+                    const rows = contentContainer.querySelectorAll('tbody tr');
+                    
+                    rows.forEach(row => {
+                        // Huwag isama sa filter ang "No assets found" row kung sakali
+                        if (row.querySelector('td[colspan]')) return; 
+
+                        const rowText = row.textContent.toLowerCase();
+                        
+                        if (rowText.includes(filterText)) {
+                            row.removeAttribute('style'); // Ipakita ang row
+                        } else {
+                            row.setAttribute('style', 'display: none !important;'); // Itago ang row
+                        }
+                    });
+                });
+            }
         }
     });
 
