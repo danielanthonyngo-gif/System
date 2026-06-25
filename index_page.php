@@ -121,11 +121,6 @@ $icon_class = ($current_status == 'For Disposal') ? 'fa-trash-alt' : (($current_
         <?php endforeach; ?>
     </div>
 
-    <div class="table-card">
-        <div class="search-container mb-3">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="assetSearch" class="search-bar search-bar-live" placeholder="Search ID, tag, serial, or model..." oninput="this.setAttribute('value', this.value.toLowerCase().trim())">
-        </div>
 
         <div class="table-responsive">
             <table class="table custom-table align-middle" id="assetTable">
