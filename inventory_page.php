@@ -36,10 +36,10 @@ $current_page = 'view_area.php';
     <style>
         :root { 
             --app-bg: #f8f7ff;
-            --main-gradient: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+            --main-gradient: linear-gradient(135deg, #7A1CAC 0%, #7A1CAC 100%);
             --sidebar-width: 260px;
-            --accent-purple: #6f42c1;
-            --accent-pink: #d63384;
+            --accent-purple: #2E073F;
+            --accent-pink: #7A1CAC;
         }
 
         body { 
@@ -110,10 +110,40 @@ $current_page = 'view_area.php';
             font-weight: 600;
             transition: all 0.3s ease;
         }
+
+        .btn-purple {
+            background: var(--main-gradient);
+            border: none; 
+            color: white;
+        }
+
+        .filter-dropdown .dropdown-item {
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .filter-dropdown .dropdown-item.active {
+            background: var(--main-gradient) !important;
+            color: white !important;
         .search-bar:focus {
             border-color: var(--accent-purple);
             box-shadow: 0 0 0 4px rgba(111, 66, 193, 0.1);
             outline: none;
+        }
+
+        .filter-dropdown .dropdown-header {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #adb5bd;
+            padding: 10px 15px 5px;
+        }
+
+        .filter-dropdown .dropdown-divider {
+            margin: 8px 0;
+            border-top: 1px solid #f1f1f1;
         }
 
         .custom-table thead th {
@@ -179,6 +209,7 @@ $current_page = 'view_area.php';
                     <h2 class="m-0 fw-800" style="color: #1e293b;"><?php echo $active; ?></h2>
                 </div>
             </div>
+            <div class="profile-dot"><?php echo strtoupper(substr($_SESSION['user'] ?? 'A', 0, 1)); ?></div>
         </div>
 
         <div class="table-card">
@@ -191,6 +222,31 @@ $current_page = 'view_area.php';
                     <a href="view_area.php" class="btn btn-light btn-action-main text-muted border px-4">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
+
+                    <!-- SINGLE BUTTON FILTER DROPDOWN -->
+                    <div class="dropdown filter-dropdown">
+                        <button class="btn btn-action-main dropdown-toggle border bg-white shadow-sm" type="button" id="filterDropdown" data-bs-toggle="dropdown" style="border-radius: 20px;">
+                            <i class="fas fa-filter me-2" style="color: #0d6efd;"></i> 
+                            Filter: <span id="activeFilterLabel" class="fw-800" style="color: var(--accent-purple);">All</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2" style="border-radius: 15px; min-width: 200px;">
+                            <li><h6 class="dropdown-header">By Status</h6></li>
+                            <li><a class="dropdown-item rounded-3 active" href="#" onclick="setFilter('All', this, 'All Status')">All Status</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Active', this, 'Active')">Active</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Replacement', this, 'Replacement')">Replacement</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('For Disposal', this, 'For Disposal')">For Disposal</a></li>
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            
+                            <li><h6 class="dropdown-header">By Type</h6></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Laptop', this, 'Laptops')">Laptops</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Desktop', this, 'Desktops')">Desktops</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#" onclick="setFilter('Monitor', this, 'Monitors')">Monitors</a></li>
+                        </ul>
+                    </div>
+
+                    <button type="button" class="btn btn-purple btn-action-main text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#deployAssetModal">
+                        <i class="fas fa-plus me-2"></i> New Asset
                     <button type="button" class="btn btn-purple btn-action-main shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#deployAssetModal">
                         <i class="fas fa-plus me-2"></i>New Asset
                     </button>
@@ -205,18 +261,27 @@ $current_page = 'view_area.php';
                             <th>Asset Tag</th>
                             <th>Device Details</th>
                             <th>Type</th>
-                            <th>Location</th>
+                            <th>Location/Status</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php while($row = mysqli_fetch_assoc($assets)): ?>
+                        <tr class="asset-row" 
+                            data-type="<?php echo $row['asset_type'] ?? 'N/A'; ?>" 
+                            data-status="<?php echo $row['status'] ?? 'N/A'; ?>">
+                            <td class="fw-800"><?php echo $row['asset_tag']; ?></td>
                         <tr>
                             <td class="text-muted fw-600"><?php echo date("M d, Y", strtotime($row['created_at'] ?? 'now')); ?></td>
                             <td class="fw-800 text-dark"><?php echo $row['asset_tag']; ?></td>
                             <td>
                                 <div class="fw-800" style="color: #4338ca;"><?php echo $row['brand_model']; ?></div>
                                 <div class="text-muted small fw-600" style="font-size: 0.75rem;"><?php echo $row['serial_number']; ?></div>
+                            </td>
+                            <td><span class="fw-600 text-muted"><?php echo $row['asset_type'] ?? 'N/A'; ?></span></td>
+                            <td>
+                                <span class="badge bg-light text-primary border rounded-pill px-3"><?php echo $row['location']; ?></span>
+                                <span class="d-none status-cell"><?php echo $row['status']; ?></span>
                             </td>
                             <td><span class="text-muted fw-700"><?php echo $row['type'] ?? 'N/A'; ?></span></td>
                             <td><span class="badge-location"><?php echo $row['location']; ?></span></td>
@@ -283,6 +348,20 @@ $current_page = 'view_area.php';
     </div>
 
     <script>
+        let currentFilterValue = 'All';
+
+        function applyFilters() {
+            let search = document.getElementById('assetSearch').value.toLowerCase();
+            let rows = document.querySelectorAll('.asset-row');
+            let found = false;
+
+            rows.forEach(row => {
+                let text = row.innerText.toLowerCase();
+                let type = row.getAttribute('data-type');
+                let status = row.getAttribute('data-status');
+                
+                let matchesSearch = text.includes(search);
+                let matchesFilter = (currentFilterValue === 'All' || type === currentFilterValue || status === currentFilterValue);
         // --- SEARCH BAR LOGIC ---
         document.getElementById('assetSearch').addEventListener('keyup', function() {
             let filter = this.value.toLowerCase();
@@ -299,6 +378,18 @@ $current_page = 'view_area.php';
                     row.style.display = "none";
                 }
             });
+            document.getElementById('noResultsRow').style.display = found ? "none" : "";
+        }
+
+        function setFilter(filterVal, element, label) {
+            document.querySelectorAll('.filter-dropdown .dropdown-item').forEach(i => i.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('activeFilterLabel').innerText = label;
+            currentFilterValue = filterVal;
+            applyFilters();
+        }
+
+        document.getElementById('assetSearch').addEventListener('keyup', applyFilters);
         });
 
         // --- SCANNER LOGIC ---
